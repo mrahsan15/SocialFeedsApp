@@ -46,6 +46,7 @@ public class CommonWidgets {
             out.println(
 "		<!-- Datepicker CSS -->\n" +
 "		<link rel=\"stylesheet\" type=\"text/css\" href=\"css/datepicker.css\">\n");
+            out.println("<link rel=\"stylesheet\" href=\"css/summernote.css\">");
             out.println(
 "		<!-- Font Awesome -->\n" +
 "		<link href=\"fonts/font-awesome.min.css\" rel=\"stylesheet\">\n");
@@ -382,7 +383,6 @@ public class CommonWidgets {
         String LoginURL = "";
         String ErrorURL = "";
         String BasicTemplateURL = "";
-        
         String Dashboard = "<li>\n" +
 "						<a href='"+DashboardURL+"'>\n" +
 "							<i class=\"fa fa-desktop\"></i>\n" +
@@ -398,10 +398,10 @@ public class CommonWidgets {
                                                         
 "						</a>\n" +
 "					</li>";
-        String Blog="<li>\n" +
-                "<a href='"+BlogURL+"'>\n" +
-"                   <i class=\"fa fa-pencil\"></i> \n" +
-"                       <span>Blog</span>\n" +
+        String Profile="<li>\n" +
+                "<a href='"+ProfileURL+"'>\n" +
+"                   <i class=\"fa fa-user\"></i> \n" +
+"                       <span>Profile</span>\n" +
 "		</a>\n" +
 "	</li>\n";
         
@@ -439,9 +439,9 @@ public class CommonWidgets {
 "                         </li>\n";
         
         
-        String Profile="<li>\n" +
-"								<a href='"+ProfileURL+"'>\n" +
-"									<span>Profile</span>\n" +
+        String Blog="<li>\n" +
+"								<a href='"+BlogURL+"'>\n" +
+"									<span>Blog</span>\n" +
 "								</a>\n" +
 "							</li>\n" ;
         String Pricing = "<li>\n" +
@@ -486,11 +486,12 @@ public class CommonWidgets {
 "						</a>\n" +
 "					</li>";
                 break;
-            case "Blog":
-                Blog = "<li>\n" +
-                        "<a href='"+BlogURL+"'>\n" +
-        "                   <i class=\"fa fa-pencil\"></i> \n" +
-"                               <span>Blog</span>\n" +
+            case "Profile":
+                Profile = "<li class=\"highlight\">\n" +
+                        "<a href='"+ProfileURL+"'>\n" +
+        "                   <i class=\"fa fa-user\"></i> \n" +
+"                               <span>Profile</span>\n" +
+                        "<span class=\"current-page\"></span>"+
 "                        </a>\n" +
 "               	</li>\n";
                 break;
@@ -541,11 +542,11 @@ public class CommonWidgets {
 "                           </a>\n" +
 "                         </li>";
                 break;
-            case "Profile":
+            case "Blog":
                 SubmenuActive =" highlight active";
                 SubmenuActiveDisplay= " style=\"display:block;\"";
-                Profile = "<li>\n" +
-"								<a href='"+ProfileURL+"' class=\"select\">\n" +
+                Blog = "<li>\n" +
+"								<a href='"+BlogURL+"' class=\"select\">\n" +
 "									<span>Profile</span>\n" +
 "								</a>\n" +
 "							</li>";
@@ -604,7 +605,7 @@ public class CommonWidgets {
             out.println(Dashboard);
             out.println(Timeline);
             
-            out.println(Blog);
+            out.println(Profile);
             out.println(Graphs);
             out.println(Calendar);
             out.println(Gallery);
@@ -618,7 +619,7 @@ public class CommonWidgets {
 "						<ul "+SubmenuActiveDisplay+">\n" 
         
         +Invoice
-        +Profile+
+        +Blog+
         Pricing+
         Login+
         Error+
