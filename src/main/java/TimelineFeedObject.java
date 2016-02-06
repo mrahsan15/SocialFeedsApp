@@ -12,6 +12,7 @@ import twitter4j.TwitterFactory;
 import twitter4j.UserMentionEntity;
 
 public class TimelineFeedObject {
+    
     String Caption = "";
     String MediaUrl="";
     String VideoTags ="";
@@ -19,14 +20,19 @@ public class TimelineFeedObject {
     String UserFullName = "";
     String UserProfilePic = "";
     String UserID = "";
+    String Bio = "";
     Date datetime = null;
     String source = "";
     int medianumber = 0;
+    int followers = 0;
+    int followings = 0;
+    int favorites = 0;
     boolean liked = false;
     int likes = 0;
     int comments = 0;
-    boolean retweeted = false;
+    boolean retweetedbyme = false;
     boolean retweet = false;
+    boolean retweeted = false;
     String statusid = "";
     int retweets = 0;
     String mediatype = "photo, video, animated_gif";
@@ -40,52 +46,78 @@ public class TimelineFeedObject {
 
 
     public TimelineFeedObject(twitter4j.Status twitterstatus){
-        UserName = twitterstatus.getUser().getScreenName();
-        UserFullName = twitterstatus.getUser().getName();
-        UserID = twitterstatus.getUser().getId()+"";
-        UserProfilePic = twitterstatus.getUser().getOriginalProfileImageURL();
-        Caption = twitterstatus.getText();
-        datetime = twitterstatus.getCreatedAt();
-        likes = twitterstatus.getFavoriteCount();
-        
-        retweets = twitterstatus.getRetweetCount();
-        liked = twitterstatus.isFavorited();
-        retweeted = twitterstatus.isRetweetedByMe();
-        retweet =  twitterstatus.isRetweeted();
-        statusid = twitterstatus.getId()+"";
-        mediaid =  twitterstatus.getMediaEntities()[0].getId()+"";
-        mediaurl = twitterstatus.getMediaEntities()[0].getMediaURL();
-        mentions = twitterstatus.getUserMentionEntities();
-        HashtagEntity[] hashtagentity = twitterstatus.getHashtagEntities();
-        if(hashtagentity.length> 0){
-            for(int i = 0; i < hashtagentity.length;i++){
-                hashtags.add(hashtagentity[i].getText());
+        try{
+            UserName = twitterstatus.getUser().getScreenName();
+            UserFullName = twitterstatus.getUser().getName();
+            UserID = twitterstatus.getUser().getId()+"";
+            UserProfilePic = twitterstatus.getUser().getOriginalProfileImageURL();
+            Bio = twitterstatus.getUser().getDescription();
+            medianumber = twitterstatus.getUser().getStatusesCount();
+            followers = twitterstatus.getUser().getFollowersCount();
+            followings = twitterstatus.getUser().getFriendsCount();
+            favorites= twitterstatus.getUser().getFavouritesCount();
+            try{
+                Caption = twitterstatus.getText();
+            }catch(Exception ex){
+                
             }
+            
+            datetime = twitterstatus.getCreatedAt();
+            likes = twitterstatus.getFavoriteCount();
+            
+            retweets = twitterstatus.getRetweetCount();
+            liked = twitterstatus.isFavorited();
+            retweetedbyme = twitterstatus.isRetweetedByMe();
+            retweeted =  twitterstatus.isRetweeted();
+            retweet = twitterstatus.isRetweet();
+            statusid = twitterstatus.getId()+"";
+            mentions = twitterstatus.getUserMentionEntities();
+            HashtagEntity[] hashtagentity = twitterstatus.getHashtagEntities();
+            if(hashtagentity.length> 0){
+                for(int i = 0; i < hashtagentity.length;i++){
+                    hashtags.add(hashtagentity[i].getText());
+                }
+            }
+            mediaentity = twitterstatus.getMediaEntities();
+            source = "twitter";
+        }catch(Exception ex){
+            System.out.println(ex);
         }
-        mediaentity = twitterstatus.getMediaEntities();
-        source = "twitter";
         
     }
     public TimelineFeedObject(MediaFeedData instastatus){
-        source = "insta";
-        UserName = instastatus.getUser().getUserName();
-        UserFullName = instastatus.getUser().getFullName();
-        UserID = instastatus.getUser().getId();
-        UserProfilePic = instastatus.getUser().getProfilePictureUrl();
-        Caption = instastatus.getCaption().getText();
-        datetime = new Date(Long.parseLong(instastatus.getCreatedTime()));
-        likes = instastatus.getLikes().getCount();
-        liked = instastatus.isUserHasLiked();
-        statusid = instastatus.getId();
-        if(instastatus.getType().equals("image")){
-            mediatype = "image";
-            mediaurl = instastatus.getImages().getStandardResolution().getImageUrl();
-        }else if(instastatus.getType().equals("image")){
-            mediatype = "video";
-            mediaurl = instastatus.getVideos().getStandardResolution().getUrl();
+        try{
+            
+            source = "insta";
+            UserName = instastatus.getUser().getUserName();
+            UserFullName = instastatus.getUser().getFullName();
+            UserID = instastatus.getUser().getId();
+            UserProfilePic = instastatus.getUser().getProfilePictureUrl();
+            Bio = instastatus.getUser().getBio();
+            
+            try{
+                Caption = instastatus.getCaption().getText();
+            }catch(Exception ex){
+                
+            }
+            
+            datetime = new Date(Long.parseLong(instastatus.getCreatedTime()+"000"));
+            likes = instastatus.getLikes().getCount();
+            liked = instastatus.isUserHasLiked();
+            statusid = instastatus.getId();
+            if(instastatus.getType().equals("image")){
+                mediatype = "image";
+                mediaurl = instastatus.getImages().getStandardResolution().getImageUrl();
+            }else if(instastatus.getType().equals("video")){
+                mediatype = "video";
+                mediaurl = instastatus.getVideos().getStandardResolution().getUrl();
+            }
+            comments = instastatus.getComments().getCount();
+            hashtags = instastatus.getTags();
+            
+        }catch(Exception ex){
+            System.out.println(ex);
         }
-        comments = instastatus.getComments().getCount();
-        hashtags = instastatus.getTags();
         
     }
 }
