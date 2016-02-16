@@ -17,9 +17,11 @@ import org.jinstagram.auth.InstagramAuthService;
 import org.jinstagram.auth.model.Token;
 import org.jinstagram.auth.model.Verifier;
 import org.jinstagram.auth.oauth.InstagramService;
+import org.jinstagram.entity.common.Pagination;
 import org.jinstagram.entity.users.basicinfo.UserInfo;
 import org.jinstagram.entity.users.feed.MediaFeed;
 import org.jinstagram.entity.users.feed.MediaFeedData;
+import org.jinstagram.entity.users.feed.UserFeed;
 import twitter4j.Location;
 import twitter4j.MediaEntity;
 import twitter4j.Query;
@@ -42,7 +44,7 @@ public class timeline extends HttpServlet {
                 response.setContentType("text/html;charset=UTF-8");
         PrintWriter out = response.getWriter();
         InstagramService service = null ;
-        String code = "";
+//        String code = "";
         String CopyRightSyntax = "Copyright Apisylux Dashboard Panel 2016";
         query = request.getParameter("q");
         Facebook facebook = null;
@@ -80,46 +82,47 @@ public class timeline extends HttpServlet {
         
         
         try {
-            service = new InstagramAuthService()
-            .apiKey("e0bbe4b568cd453e925d7962ad2b9c7c")
-            .apiSecret("f11f9582bef947b4b28bf871ce36a06c")
-            .callback("http://192.168.1.100:8080/SocialFeedsApp/timeline")
-            .build();
-            
-            code = request.getHeader("code");
-            HttpSession session = request.getSession();
-            
-            Cookie[] cookies = request.getCookies();
-            String token = "";
-            for(int i = 0; i< cookies.length; i++){
-                if((cookies[i].getName()).equals("token")){
-                    token = cookies[i].getValue();
-                }
-            }
-            
-            
-            if(token.equals("")){
-                if(request.getParameter("code").equals("null")){
-                    response.sendRedirect(service.getAuthorizationUrl(null));
-                }
-                else{
-                    Verifier verifier = new Verifier(request.getParameter("code"));
-                    Token tokens = service.getAccessToken(null, verifier);
-                    token = tokens.getToken();
-                    Cookie tokentoken = new Cookie("token",token);
-                    response.addCookie(tokentoken);
-                    String name = new Instagram(new Token(token,"")).getCurrentUserInfo().getData().getFullName();
-                    Instagram insta =new Instagram(new Token(token,""));
-                    PrintPage(insta, out,facebook,twitter);
-                }
-
-            }else{
-                String name = new Instagram(new Token(token,"")).getCurrentUserInfo().getData().getFullName();
-                Instagram insta = new Instagram(new Token(token,""));
+//            service = new InstagramAuthService()
+//            .apiKey("e0bbe4b568cd453e925d7962ad2b9c7c")
+//            .apiSecret("f11f9582bef947b4b28bf871ce36a06c")
+//            .callback("http://192.168.1.100:8080/SocialFeedsApp/timeline")
+//            .build();
+//            
+//            code = request.getHeader("code");
+//            HttpSession session = request.getSession();
+//            
+//            Cookie[] cookies = request.getCookies();
+//            String token = "";
+//            for(int i = 0; i< cookies.length; i++){
+//                if((cookies[i].getName()).equals("token")){
+//                    token = cookies[i].getValue();
+//                }
+//            }
+//            
+//            
+//            if(token.equals("")){
+//                if(request.getParameter("code").equals("null")){
+//                    response.sendRedirect(service.getAuthorizationUrl(null));
+//                }
+//                else{
+//                    Verifier verifier = new Verifier(request.getParameter("code"));
+//                    Token tokens = service.getAccessToken(null, verifier);
+//                    token = tokens.getToken();
+//                    Cookie tokentoken = new Cookie("token",token);
+//                    response.addCookie(tokentoken);
+//                    String name = new Instagram(new Token(token,"")).getCurrentUserInfo().getData().getFullName();
+//                    Instagram insta =new Instagram(new Token(token,""));
+//                    PrintPage(insta, out,facebook,twitter);
+//                }
+//
+//            }else{
+//                String name = new Instagram(new Token(token,"")).getCurrentUserInfo().getData().getFullName();
+                Instagram insta = null;
+//                        new Instagram(new Token(token,""));
                 PrintPage(insta,out,facebook,twitter);
-            }
-            
-            
+//            }
+//            
+//            
 //            if((request.getParameter("code")).equals("null")){
 //            }else{
 //                Instagram insta;
@@ -154,21 +157,8 @@ public void PrintPage(Instagram insta, PrintWriter out,Facebook facebook,Twitter
     UserInfo info = null;
     ArrayList timelinefeeds = new ArrayList();
     TimelineFeedObject timeline ;
-    CommonWidgets widget = new CommonWidgets(insta, out);
-
-    try {
-        
-        
-        
-        info = insta.getCurrentUserInfo();
-        String ProfilePic = info.getData().getProfilePicture();
-        String FullName  = info.getData().getFullName();
-        String CurrentUserID = info.getData().getId();
-        String Bio = info.getData().getBio();
-        int follower = info.getData().getCounts().getFollowedBy();
-        int following = info.getData().getCounts().getFollows();
-        int mediacount = info.getData().getCounts().getMedia();
-        try{
+    CommonWidgets widget = new CommonWidgets(out);
+    try{
             if(query.equals("null")){
                 
             }else{
@@ -193,66 +183,49 @@ public void PrintPage(Instagram insta, PrintWriter out,Facebook facebook,Twitter
         }
         
         
-    
+    try{
         if(!querypassed){
             //Adding Twitter HomeTimeline feeds in ArrayList
-        twitter4j.Paging paging = new twitter4j.Paging(1, 200);
-        twitter4j.ResponseList<Status> statuses = twitter.getHomeTimeline(paging);
-        for(int i = 0; i < statuses.size(); i++){
-            timeline= new TimelineFeedObject(statuses.get(i));
-            timelinefeeds.add(timeline);
-        }
-        
-        //Adding Instagram HomeTimeline feeds in ArrayList
-        MediaFeed mediafeed = insta.getUserFeeds();
-        List<MediaFeedData> mediafeeddata = mediafeed.getData();
-        for(int i = 0; i < mediafeeddata.size(); i++){
-            timeline = new TimelineFeedObject(mediafeeddata.get(i));
-            timelinefeeds.add(timeline);
-        }
-        
-        Collections.sort(timelinefeeds,new Comparator(){
-            @Override
-            public int compare(Object o1, Object o2) {
-                return ((TimelineFeedObject)o1).datetime.compareTo(((TimelineFeedObject)o2).datetime);
+            twitter4j.Paging paging = new twitter4j.Paging(1, 200);
+            twitter4j.ResponseList<Status> statuses = twitter.getHomeTimeline(paging);
+            for(int i = 0; i < statuses.size(); i++){
+                timeline= new TimelineFeedObject(statuses.get(i));
+                timelinefeeds.add(timeline);
+            }
+
+            //Adding Instagram HomeTimeline feeds in ArrayList
+            MediaFeed mediafeed = insta.getUserFeeds();
+            List<MediaFeedData> mediafeeddata = mediafeed.getData();
+            for(int i = 0; i < mediafeeddata.size(); i++){
+                timeline = new TimelineFeedObject(mediafeeddata.get(i));
+                timelinefeeds.add(timeline);
             }
             
-        });
+            Collections.sort(timelinefeeds,new Comparator(){
+                @Override
+                public int compare(Object o1, Object o2) {
+                    return ((TimelineFeedObject)o1).datetime.compareTo(((TimelineFeedObject)o2).datetime);
+                }
+
+            });
         
         }
+    }catch(Exception ex){
         
-        
-        
-//        ResponseList<Friend> friendlist=facebook.friends().getBelongsFriend("988763721143756");
-//        
-//        
-//        friend = friend+ friendlist.size();
-//        friendlist.getSummary().getTotalCount();
-//        
-//        for(int i = 0; i < friendlist.size(); i++){
-//            System.out.println(friendlist.get(i).getName());
-//        }
-    
-    
+    }   
         widget.HeadRegion(out);
-    
         out.println("<body>");
         out.println("<!-- Header Start -->\n" +
 "		<header>");
-
         widget.Logo(out);
-        
         widget.Search(out);
         widget.RightNavBar(out);
-//      
         out.println("		</header>\n" +
 "		<!-- Header ends -->");
         out.println("		<!-- Left sidebar starts -->\n" +
 "		<aside id=\"sidebar\">");
-
         widget.CurrentUser(out);
         widget.Menu(out, "Timeline");
-        
         out.println("			<!-- Freebies Starts -->\n" +
 "			<div class=\"freebies\">");
         out.println("			</div>\n" +
@@ -274,7 +247,7 @@ public void PrintPage(Instagram insta, PrintWriter out,Facebook facebook,Twitter
 //"							<span id=\"downloads_graph\"></span>\n" +
 "						</div>\n" +
 "						<div class=\"stats-details\">\n" +
-"							<h4><span id=\"\">"+follower+"</span> <i class=\"fa fa-chevron-up up\"></i></h4>\n" +
+//"							<h4><span id=\"\">"+follower+"</span> <i class=\"fa fa-chevron-up up\"></i></h4>\n" +
 "							<h5>Followers</h5>\n" +
 "						</div>\n" +
 "					</li>\n" +
@@ -283,7 +256,7 @@ public void PrintPage(Instagram insta, PrintWriter out,Facebook facebook,Twitter
 //"							<span id=\"users_online_graph\"></span>\n" +
 "						</div>\n" +
 "						<div class=\"stats-details\">\n" +
-"							<h4><span id=\"\">"+following+"</span> <i class=\"fa fa-chevron-down down\"></i></h4>\n" +
+//"							<h4><span id=\"\">"+following+"</span> <i class=\"fa fa-chevron-down down\"></i></h4>\n" +
 "							<h5>Following</h5>\n" +
 "						</div>\n" +
 "					</li>\n" +
@@ -298,9 +271,8 @@ public void PrintPage(Instagram insta, PrintWriter out,Facebook facebook,Twitter
         out.println(
 "					<div class=\"timeline animated\">\n"); 
         
-//        Pagination userfeedpage = new Pagination();
-//        UserFeed userfeed = insta.getUserFeedInfoNextPage(userfeedpage);
-//        
+        
+        
         
         for(int i = timelinefeeds.size(); i >0 ; i--){
             timeline = (TimelineFeedObject) timelinefeeds.get(i-1);
@@ -549,12 +521,12 @@ public void PrintPage(Instagram insta, PrintWriter out,Facebook facebook,Twitter
 "														</div>\n" +
 "													</div>\n" +
 "												</div>\n" +
-"											</div>\n" +
-"										</div>\n" +
-"									</div>\n" +
-"								</div>\n" +
-"							</div>\n" +
-"						</div>");
+"											</div>"
+                + "</div>"
+                + "</div>"
+                + "</div>"
+                + "</div>\n"
+                + "</div>");
         
 
         //Trend Featuring on Twitter Right now
@@ -565,28 +537,32 @@ public void PrintPage(Instagram insta, PrintWriter out,Facebook facebook,Twitter
 "									</div>\n" +
 "									<div class=\"panel-body\">\n" +
 "										<ul class=\"list-group no-margin\">\n");
-        TrendsResources trends = twitter.trends();
-        
-        
-        twitter4j.ResponseList<Location> locations;
-        locations = twitter.getAvailableTrends();
-        int woeid = 0;
-        for(int i = 0; i < locations.size(); i++){
-            if(locations.get(i).getName().toLowerCase().equals("rawalpindi")){
-                Trend[] trend =trends.getPlaceTrends(locations.get(i).getWoeid()).getTrends();
-                for(int j = 0; j< trend.length; j++){
-                    String HashtagUrl = "<a href=\"timeline?q=hashtag\">#hashtag</a>";
-                    HashtagUrl= HashtagUrl.replace("hashtag",(trend[j].getName().replace("#", "")));
-                    out.println("<li class=\"list-group-item\""
-                            + "style=\"" 
-                            + "padding-top: 5px;"
-                            + "padding-bottom: 5px;\">"
-                            +HashtagUrl
-                            +"</li>");
-                }
-            }
-            
-        }
+//        TrendsResources trends = twitter.trends();
+//        
+//        try{
+//            twitter4j.ResponseList<Location> locations;
+//        locations = twitter.getAvailableTrends();
+//        int woeid = 0;
+//        for(int i = 0; i < locations.size(); i++){
+//            if(locations.get(i).getName().toLowerCase().equals("rawalpindi")){
+//                Trend[] trend =trends.getPlaceTrends(locations.get(i).getWoeid()).getTrends();
+//                for(int j = 0; j< trend.length; j++){
+//                    String HashtagUrl = "<a href=\"timeline?q=hashtag\">#hashtag</a>";
+//                    HashtagUrl= HashtagUrl.replace("hashtag",(trend[j].getName().replace("#", "")));
+//                    out.println("<li class=\"list-group-item\""
+//                            + "style=\"" 
+//                            + "padding-top: 5px;"
+//                            + "padding-bottom: 5px;\">"
+//                            +HashtagUrl
+//                            +"</li>");
+//                }
+//            }
+//            
+//        }
+//        }catch(Exception ex){
+//            
+//        }
+//        
 
         out.println(
 "										</ul>\n" +
@@ -665,9 +641,6 @@ public void PrintPage(Instagram insta, PrintWriter out,Facebook facebook,Twitter
         out.println("	</body>\n" +
 "\n" +
 "</html>");
-}     catch (Exception ex) {
-            out.println(ex);
-        }
     }
     // <editor-fold defaultstate="collapsed" desc="HttpServlet methods. Click on the + sign on the left to edit the code.">
     /**

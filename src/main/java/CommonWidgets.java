@@ -1,15 +1,31 @@
 
 import java.io.PrintWriter;
-import java.util.logging.Level;
-import java.util.logging.Logger;
+import java.sql.Connection;
+import java.sql.ResultSet;
+import java.sql.Statement;
 import org.jinstagram.Instagram;
-import org.jinstagram.entity.users.basicinfo.UserInfo;
-import org.jinstagram.exceptions.InstagramException;
 
 public class CommonWidgets {
     Instagram insta = null;
-    public CommonWidgets(Instagram instagram,PrintWriter out){
-        insta = instagram;
+    Connection con = new DBConnectivity().ConnectDB();
+    Statement getAccountList =null;
+    String AccountUserInfo = "SELECT * from Ahsan_Data.LoginAccounts";
+    String FirstName = "";
+    String ProfilePicture = "";
+    
+    public CommonWidgets(PrintWriter out){
+        try{
+            getAccountList= con.createStatement();
+            ResultSet UserInfo = getAccountList.executeQuery(AccountUserInfo);
+            if(UserInfo.next()){
+                FirstName  = UserInfo.getString("FirstName");
+                ProfilePicture = UserInfo.getString("ProfilePic");
+            }
+        }catch(Exception ex){
+            System.out.println("Common Widget DB Error!");
+        }
+        
+//        insta = instagram;
     }
     public void HeadRegion(PrintWriter out){
         out.println("<!DOCTYPE html>");
@@ -84,254 +100,170 @@ public class CommonWidgets {
             
     }
     public void RightNavBar(PrintWriter out){
-        try {
-            out.println(
-                    "			<!-- Mini right nav starts -->\n" +
-                            "			<div class=\"pull-right\">\n");
-            out.println(
-                    "				<ul id=\"mini-nav\" class=\"clearfix\">\n" +
-                            "					<li class=\"list-box hidden-lg hidden-md hidden-sm\" id=\"mob-nav\">\n" +
-                            "						<a href=\"#\">\n");
-            out.println(
-                    "							<i class=\"fa fa-reorder\"></i>\n" +
-                            "						</a>\n" +
-                            "					</li>\n");
-            out.println(
-                    "					<li class=\"list-box dropdown hidden-xs\">\n");
-            out.println(
-                    "						<a id=\"drop7\" href=\"#\" role=\"button\" class=\"dropdown-toggle\" data-toggle=\"dropdown\">\n" +
-                            "							<i class=\"fa fa-image\"></i>\n" +
-                            "						</a>\n");
-            out.println(
-                    "						<span class=\"info-label info-bg animated rubberBand\">0</span>\n");
-            out.println(
-                    "						<ul class=\"blog-gallery dropdown-menu fadeInDown animated clearfix recent-tweets\">\n");
-//            out.println(
-//"							<li>\n" +
-//"								<img src=\"img/user1.jpg\" alt=\"User\">\n" +
-//"							</li>\n");
-//            out.println(
-//"							<li>\n" +
-//"								<img src=\"img/user2.jpg\" alt=\"User\">\n" +
-//"							</li>\n");
-//            out.println(
-//"							<li>\n" +
-//"								<img src=\"img/user3.jpg\" alt=\"User\">\n" +
-//"							</li>\n");
-//            out.println("<li>\n" +
-//                    "<img src=\"img/user4.jpg\" alt=\"User\">\n" +
-//                    "</li>\n");
-//            out.println("<li>\n" +
-//                    "<img src=\"img/user5.jpg\" alt=\"User\">\n" +
-//                    "</li>\n");
-//            out.println("<li>\n" +
-//                    "<img src=\"img/user6.jpg\" alt=\"User\">\n" +
-//                    "</li>\n");
-//            out.println("<li>\n" +
-//                    "<img src=\"img/user7.jpg\" alt=\"User\">\n" +
-//                    "</li>\n");
-//            out.println(
-//"							<li>\n" +
-//"								<img src=\"img/user8.jpg\" alt=\"User\">\n" +
-//"							</li>\n");
-//            out.println(
-//"							<li>\n" +
-//"								<img src=\"img/user9.jpg\" alt=\"User\">\n" +
-//"							</li>\n");
-//            out.println(
-//"							<li>\n" +
-//"								<img src=\"img/user3.jpg\" alt=\"User\">\n" +
-//"							</li>\n");
-            out.println(
-                    "						</ul>\n");
-            out.println(
-                    "					</li>\n");
-            out.println(
-                    "					<li class=\"list-box dropdown hidden-xs\">\n");
-            out.println(
-                    "						<a id=\"drop5\" href=\"#\" role=\"button\" class=\"dropdown-toggle\" data-toggle=\"dropdown\">\n" +
-                            "							<i class=\"fa fa-th\"></i>\n" +
-                            "						</a>\n");
-            out.println(
-                    "						<span class=\"info-label success-bg animated rubberBand\">0</span>\n");
-            out.println(
-                    "						<ul class=\"dropdown-menu fadeInDown animated quick-actions\">\n" );
-            out.println(
-                    "							<li class=\"plain\">Recently Viewed</li>\n");
-//            out.println(
-//"							<li>\n");
-//            out.println(
-//"								<a href=\"Profile\">\n" +
-//"									<i class=\"fa fa-file-word-o text-success\"></i>\n" +
-//"									<p>Profile</p>\n" +
-//"								</a>\n" );
-//            out.println(
-//"							</li>\n");
-//            out.println(
-//"							<li>\n" +
-//"								<a href=\"gallery.html\">\n" +
-//"									<i class=\"fa fa-image text-danger\"></i>\n" +
-//"									<p>Gallery</p>\n" +
-//"								</a>\n" +
-//"							</li>\n" );
-//            out.println(
-//"							<li>\n" +
-//"								<a href=\"timeline\">\n" +
-//"									<i class=\"fa fa-list-ol text-info\"></i>\n" +
-//"									<p>Timeline</p>\n" +
-//"								</a>\n" +
-//"							</li>\n");
-//            out.println(
-//"							<li>\n" +
-//"								<a href=\"graphs.html\">\n" +
-//"									<i class=\"fa fa-map-marker text-warning\"></i>\n" +
-//"									<p>Charts</p>\n" +
-//"								</a>\n" +
-//"							</li>\n");
-//            out.println(
-//"							<li>\n" +
-//"								<a href=\"editor.html\">\n" +
-//"									<i class=\"fa fa-pencil text-danger\"></i>\n" +
-//"									<p>Editor</p>\n" +
-//"								</a>\n" +
-//"							</li>\n");
-//            out.println(
-//"							<li>\n" +
-//"								<a href=\"blog.html\">\n" +
-//"									<i class=\"fa fa-file-text text-success\"></i>\n" +
-//"									<p>Blog</p>\n" +
-//"								</a>\n" +
-//"							</li>\n");
-            out.println(
-                    "						</ul>\n" );
-            out.println(
-                    "					</li>\n" );
-            out.println(
-                    "					<li class=\"list-box dropdown hidden-xs\">\n");
-            out.println(
-                    "						<a id=\"drop1\" href=\"#\" role=\"button\" class=\"dropdown-toggle\" data-toggle=\"dropdown\">\n" +
-                            "							<i class=\"fa fa-bell\"></i>\n" +
-                            "						</a>\n");
-            out.println(
-                    "						<span class=\"info-label danger-bg animated rubberBand\">0</span>\n" );
-            out.println(
-                    "						<ul class=\"dropdown-menu bounceIn animated messages\">\n");
-            out.println(
-                    "							<li class=\"plain\">\n" +
-                            "								Messages\n" +
-                            "							</li>\n");
-            out.println(
-                    "							<li>\n" );
-            out.println(
-                    "								<div class=\"user-pic\">\n" +
-                            "									<img src=\"img/user4.jpg\" alt=\"User\">\n" +
-                            "								</div>\n" );
-            out.println(
-                    "								<div class=\"details\">\n" +
-                            "									<strong class=\"text-danger\">Wilson</strong>\n" +
-                            "									<span>Uploaded 28 new files yesterday.</span>\n");
-            out.println(
-                    "									<div class=\"progress progress-xs no-margin\">\n" );
-            out.println(
-                    "										<div class=\"progress-bar progress-bar-info\" role=\"progressbar\" aria-valuenow=\"90\" aria-valuemin=\"0\" aria-valuemax=\"100\" style=\"width: 90%;\">\n" +
-                            "										</div>\n");
-            out.println(
-                    "									</div>\n");
-            out.println(
-                    "								</div>\n");
-            out.println(
-                    "							</li>\n" );
-            out.println(
-                    "							<li>\n" );
-            out.println(
-                    "								<div class=\"user-pic\">\n" +
-                            "									<img src=\"img/user1.jpg\" alt=\"User\">\n" +
-                            "								</div>\n");
-            out.println(
-                    "								<div class=\"details\">\n");
-            out.println(
-                    "									<strong class=\"text-danger\">Adams</strong>\n" +
-                            "									<span>Got 12 new messages.</span>\n");
-            out.println(
-                    "									<div class=\"progress progress-xs no-margin\">\n" );
-            out.println(
-                    "										<div class=\"progress-bar progress-bar-danger\" role=\"progressbar\" aria-valuenow=\"50\" aria-valuemin=\"0\" aria-valuemax=\"100\" style=\"width: 50%;\">\n" +
-                            "										</div>\n" );
-            out.println(
-                    "									</div>\n" );
-            out.println(
-                    "								</div>\n" +
-                            "							</li>\n" +
-                            "							<li>\n");
-            out.println(
-                    "								<div class=\"user-pic\">\n" +
-                            "									<img src=\"img/user3.jpg\" alt=\"User\">\n" +
-                            "								</div>\n");
-            out.println(
-                    "								<div class=\"details\">\n");
-            out.println(
-                    "									<strong class=\"text-info\">Sam</strong>\n" +
-                            "									<span>Uploaded new project files today.</span>\n");
-            out.println(
-                    "									<div class=\"progress progress-xs no-margin\">\n" +
-                            "										<div class=\"progress-bar progress-bar-success\" role=\"progressbar\" aria-valuenow=\"70\" aria-valuemin=\"0\" aria-valuemax=\"100\" style=\"width: 70%;\">\n" +
-                            "										</div>\n" +
-                            "									</div>\n");
-            out.println(
-                    "								</div>\n" );
-            out.println(
-                    "							</li>\n" +
-                            "							<li>\n" );
-            out.println(
-                    "								<div class=\"user-pic\">\n" +
-                            "									<img src=\"img/user5.jpg\" alt=\"User\">\n" +
-                            "								</div>\n");
-            out.println(
-                    "								<div class=\"details\">\n" +
-                            "									<strong class=\"text-info\">Jennifer</strong>\n" +
-                            "									<span>128 new purchases last 3 hours.</span>\n" +
-                            "									<div class=\"progress progress-xs no-margin\">\n" +
-                            "										<div class=\"progress-bar progress-bar-danger\" role=\"progressbar\" aria-valuenow=\"30\" aria-valuemin=\"0\" aria-valuemax=\"100\" style=\"width: 30%;\">\n" +
-                            "										</div>\n" +
-                            "									</div>\n" +
-                            "								</div>\n");
-            out.println(
-                    "							</li>\n" +
-                            "						</ul>\n" +
-                            "					</li>\n");
-            out.println(
-                    "					<li class=\"list-box user-profile hidden-xs\">\n" +
-                            "						<a href=\"#\" class=\"user-avtar animated rubberBand\">\n" +
-                            "							<img src=\""+insta.getCurrentUserInfo().getData().getProfilePicture()+"\" alt=\"user avatar\">\n" +
-                            "						</a>\n" +
-                            "					</li>\n");
-            out.println(
-                    "				</ul>\n" +
-                            "			</div>\n");
-            out.println(
-                    "			<!-- Mini right nav ends -->\n");
-        } catch (InstagramException ex) {
-            Logger.getLogger(CommonWidgets.class.getName()).log(Level.SEVERE, null, ex);
-        }
+        out.println(
+                "			<!-- Mini right nav starts -->\n" +
+                        "			<div class=\"pull-right\">\n");
+        out.println(
+                "				<ul id=\"mini-nav\" class=\"clearfix\">\n" +
+                        "					<li class=\"list-box hidden-lg hidden-md hidden-sm\" id=\"mob-nav\">\n" +
+                        "						<a href=\"#\">\n");
+        out.println(
+                "							<i class=\"fa fa-reorder\"></i>\n" +
+                        "						</a>\n" +
+                        "					</li>\n");
+        out.println(
+                "					<li class=\"list-box dropdown hidden-xs\">\n");
+        out.println(
+                "						<a id=\"drop7\" href=\"#\" role=\"button\" class=\"dropdown-toggle\" data-toggle=\"dropdown\">\n" +
+                        "							<i class=\"fa fa-image\"></i>\n" +
+                        "						</a>\n");
+        out.println(
+                "						<span class=\"info-label info-bg animated rubberBand\">0</span>\n");
+        out.println(
+                "						<ul class=\"blog-gallery dropdown-menu fadeInDown animated clearfix recent-tweets\">\n");
+        out.println(
+                "						</ul>\n");
+        out.println(
+                "					</li>\n");
+        out.println(
+                "					<li class=\"list-box dropdown hidden-xs\">\n");
+        out.println(
+                "						<a id=\"drop5\" href=\"#\" role=\"button\" class=\"dropdown-toggle\" data-toggle=\"dropdown\">\n" +
+                        "							<i class=\"fa fa-th\"></i>\n" +
+                        "						</a>\n");
+        out.println(
+                "						<span class=\"info-label success-bg animated rubberBand\">0</span>\n");
+        out.println(
+                "						<ul class=\"dropdown-menu fadeInDown animated quick-actions\">\n" );
+        out.println(
+                "							<li class=\"plain\">Recently Viewed</li>\n");
+        out.println(
+                "						</ul>\n" );
+        out.println(
+                "					</li>\n" );
+        out.println(
+                "					<li class=\"list-box dropdown hidden-xs\">\n");
+        out.println(
+                "						<a id=\"drop1\" href=\"#\" role=\"button\" class=\"dropdown-toggle\" data-toggle=\"dropdown\">\n" +
+                        "							<i class=\"fa fa-bell\"></i>\n" +
+                        "						</a>\n");
+        out.println(
+                "						<span class=\"info-label danger-bg animated rubberBand\">0</span>\n" );
+        out.println(
+                "						<ul class=\"dropdown-menu bounceIn animated messages\">\n");
+        out.println(
+                "							<li class=\"plain\">\n" +
+                        "								Messages\n" +
+                        "							</li>\n");
+        out.println(
+                "							<li>\n" );
+        out.println(
+                "								<div class=\"user-pic\">\n" +
+                        "									<img src=\"img/user4.jpg\" alt=\"User\">\n" +
+                        "								</div>\n" );
+        out.println(
+                "								<div class=\"details\">\n" +
+                        "									<strong class=\"text-danger\">Wilson</strong>\n" +
+                        "									<span>Uploaded 28 new files yesterday.</span>\n");
+        out.println(
+                "									<div class=\"progress progress-xs no-margin\">\n" );
+        out.println(
+                "										<div class=\"progress-bar progress-bar-info\" role=\"progressbar\" aria-valuenow=\"90\" aria-valuemin=\"0\" aria-valuemax=\"100\" style=\"width: 90%;\">\n" +
+                        "										</div>\n");
+        out.println(
+                "									</div>\n");
+        out.println(
+                "								</div>\n");
+        out.println(
+                "							</li>\n" );
+        out.println(
+                "							<li>\n" );
+        out.println(
+                "								<div class=\"user-pic\">\n" +
+                        "									<img src=\"img/user1.jpg\" alt=\"User\">\n" +
+                        "								</div>\n");
+        out.println(
+                "								<div class=\"details\">\n");
+        out.println(
+                "									<strong class=\"text-danger\">Adams</strong>\n" +
+                        "									<span>Got 12 new messages.</span>\n");
+        out.println(
+                "									<div class=\"progress progress-xs no-margin\">\n" );
+        out.println(
+                "										<div class=\"progress-bar progress-bar-danger\" role=\"progressbar\" aria-valuenow=\"50\" aria-valuemin=\"0\" aria-valuemax=\"100\" style=\"width: 50%;\">\n" +
+                        "										</div>\n" );
+        out.println(
+                "									</div>\n" );
+        out.println(
+                "								</div>\n" +
+                        "							</li>\n" +
+                        "							<li>\n");
+        out.println(
+                "								<div class=\"user-pic\">\n" +
+                        "									<img src=\"img/user3.jpg\" alt=\"User\">\n" +
+                        "								</div>\n");
+        out.println(
+                "								<div class=\"details\">\n");
+        out.println(
+                "									<strong class=\"text-info\">Sam</strong>\n" +
+                        "									<span>Uploaded new project files today.</span>\n");
+        out.println(
+                "									<div class=\"progress progress-xs no-margin\">\n" +
+                        "										<div class=\"progress-bar progress-bar-success\" role=\"progressbar\" aria-valuenow=\"70\" aria-valuemin=\"0\" aria-valuemax=\"100\" style=\"width: 70%;\">\n" +
+                        "										</div>\n" +
+                        "									</div>\n");
+        out.println(
+                "								</div>\n" );
+        out.println(
+                "							</li>\n" +
+                        "							<li>\n" );
+        out.println(
+                "								<div class=\"user-pic\">\n" +
+                        "									<img src=\"img/user5.jpg\" alt=\"User\">\n" +
+                        "								</div>\n");
+        out.println(
+                "								<div class=\"details\">\n" +
+                        "									<strong class=\"text-info\">Jennifer</strong>\n" +
+                        "									<span>128 new purchases last 3 hours.</span>\n" +
+                        "									<div class=\"progress progress-xs no-margin\">\n" +
+                        "										<div class=\"progress-bar progress-bar-danger\" role=\"progressbar\" aria-valuenow=\"30\" aria-valuemin=\"0\" aria-valuemax=\"100\" style=\"width: 30%;\">\n" +
+                        "										</div>\n" +
+                        "									</div>\n" +
+                        "								</div>\n");
+        out.println(
+                "							</li>\n" +
+                        "						</ul>\n" +
+                        "					</li>\n");
+        out.println(
+                "					<li class=\"list-box user-profile hidden-xs\">\n" +
+                        "						<a href=\"#\" class=\"user-avtar animated rubberBand\">\n" +
+                            "							<img src=\""+ProfilePicture+"\" alt=\"user avatar\">\n" +
+                        "						</a>\n" +
+                        "					</li>\n");
+        out.println(
+                "				</ul>\n" +
+                        "			</div>\n");
+        out.println(
+                "			<!-- Mini right nav ends -->\n");
     }
     public void CurrentUser(PrintWriter out){
-        UserInfo info = null;
+//        UserInfo info = null;
         try {
-            info = insta.getCurrentUserInfo();
-        
-            String ProfilePic = info.getData().getProfilePicture();
-            String FullName  = info.getData().getFullName();
+//            info = insta.getCurrentUserInfo();
+//            
+//            String ProfilePic = info.getData().getProfilePicture();
+//            String FullName  = info.getData().getFullName();
 
             out.println(
 "			<!-- Current User Starts -->\n" +
 "			<div class=\"current-user\">\n");
             out.println(
 "				<div class=\"user-avatar animated rubberBand\">\n" +
-"					<img src=\""+ProfilePic+"\" alt=\"Current User\">\n" +
+"					<img src=\""+ProfilePicture+"\" alt=\"Current User\">\n" +
 "					<span class=\"busy\"></span>\n" +
 "				</div>\n");
             out.println(
-"				<div class=\"user-name\">Welcome Mr. "+FullName+"</div>\n");
+"				<div class=\"user-name\">Welcome Mr. "+FirstName+"</div>\n");
             out.println(
 "				<ul class=\"user-links\">\n");
             out.println(

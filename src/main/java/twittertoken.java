@@ -1,7 +1,10 @@
-import java.io.File;
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.PrintWriter;
+import java.sql.Connection;
+import java.sql.SQLException;
+import java.sql.Statement;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
@@ -9,30 +12,31 @@ import javax.servlet.http.HttpServletResponse;
 import twitter4j.Twitter;
 import twitter4j.TwitterException;
 import twitter4j.TwitterFactory;
+import twitter4j.auth.AccessToken;
 import twitter4j.auth.RequestToken;
 
-public class twitterlogin extends HttpServlet {
+public class twittertoken extends HttpServlet {
 
     protected void processRequest(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
         response.setContentType("text/html;charset=UTF-8");
         try (PrintWriter out = response.getWriter()) {
             
-            Twitter twitter = new TwitterFactory().getInstance();
-            request.getSession().setAttribute("twitter", twitter);
             
-            try {
-                StringBuffer callbackURL = request.getRequestURL();
-                int index = callbackURL.lastIndexOf("/");
-                callbackURL.replace(index, callbackURL.length(), "").append("/twittercallback");
-                
-                RequestToken requestToken = twitter.getOAuthRequestToken(callbackURL.toString());
-                request.getSession().setAttribute("requestToken", requestToken);
-                response.sendRedirect(requestToken.getAuthenticationURL());
-
-            } catch (TwitterException e) {
-                throw new ServletException(e);
-            }
+            
+            
+            
+            
+            
+            out.println("<!DOCTYPE html>");
+            out.println("<html>");
+            out.println("<head>");
+            out.println("<title>Servlet twittertoken</title>");            
+            out.println("</head>");
+            out.println("<body>");
+            out.println("<h1>Servlet twittertoken at " + request.getContextPath() + "</h1>");
+            out.println("</body>");
+            out.println("</html>");
             
         }
     }

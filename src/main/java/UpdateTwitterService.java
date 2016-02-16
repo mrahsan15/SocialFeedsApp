@@ -12,6 +12,7 @@ import java.sql.ResultSet;
 import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.Iterator;
+import twitter4j.GeoLocation;
 import twitter4j.PagableResponseList;
 import twitter4j.Relationship;
 import twitter4j.Twitter;
@@ -22,8 +23,10 @@ public class UpdateTwitterService extends Thread{
     Twitter twitter = null;
     Connection con = null;
     
+    
     public UpdateTwitterService(){
         twitter  = new TwitterFactory().getInstance();
+//        twitter.trends().getClosestTrends(new GeoLocation(33.730397, 73.098203))
         con= new DBConnectivity().ConnectDB();
         UpdateFollowers(twitter, con);
 //        UpdateFollowings(twitter,con);
@@ -38,21 +41,19 @@ public class UpdateTwitterService extends Thread{
 //            File file = new File("/home/"+System.getProperty("user.name")+"/.socialfeedapp/"+twitter.getScreenName()+"/FollowersProfile/");
 //            File file = new File("/.socialfeedapp/"+twitter.getScreenName()+"/FollowersProfile/");
 //            file.mkdirs();
-//        
-            
-            
+
             ArrayList listFriends = new ArrayList();
             long cursor = -1;
             PagableResponseList<twitter4j.User> pagableFollowers;
             Statement checkstatement = con.createStatement();
             Statement updatestatement = con.createStatement();
+            int unfollowerscount = 0;
+            int followerscount = 0;
             
             do {
                 pagableFollowers = twitter.getFollowersList(twitter.getId(), cursor, 200);
-                
                 for (User user : pagableFollowers) {
                     listFriends.add(user);
-//                    System.out.println(user.getScreenName());
                     int found = 0;
                     String UserId = user.getId()+"";
                     String Name = user.getName();
@@ -66,8 +67,6 @@ public class UpdateTwitterService extends Thread{
                     
                     String ProfilePicture = user.getOriginalProfileImageURL();
                     String ProfileBanner = user.getProfileBannerURL();
-//                    Relationship relation = twitter.showFriendship(twitter.getScreenName(), user.getScreenName());
-//                    Boolean FollowBack = relation.isTargetFollowedBySource();
                     Boolean FollowBack = false;
                     String Description = user.getDescription();
                     Description = Description.replace("'", "\'");
@@ -85,6 +84,8 @@ public class UpdateTwitterService extends Thread{
                     }else{
                         String LocalProfilePicture = "";
                         String LocalProfileBanner = "";
+                        
+                        //Downloading DisplayPictures on Drive
 //                        try{
 //                            if(!ProfilePicture.equals("null")){
 //                                
@@ -121,23 +122,7 @@ public class UpdateTwitterService extends Thread{
 //                                System.out.println("Cover Picture Not Found!");
 //                        
 //                        }
-                        String DB="CREATE TABLE Ahsan_Data.Twitter_Followers("
-                                + "ID int(9) NOT NULL AUTO_INCREMENT,"
-                                + "Name varchar(500),"
-                                + "ScreenName varchar(500) NOT NULL,"
-                                + "UserID varchar(100) NOT NULL,"
-                                + "StatusCount int(9),"
-                                + "Followers int(9),"
-                                + "Followings int(9),"
-                                + "ProfilePicture varchar(500),"
-                                + "ProfileBanner varchar(500),"
-                                + "Description varchar (500),"
-                                + "LocalProfilePicture varchar(500),"
-                                + "LocalProfileBanner varchar(500),"
-                                + "FollowBack int(1),"
-                                + "UnfFollowed int(1)"
-                                + "PRIMARY KEY (ID)"
-                                + ")";
+                        
                         int followback = 0;
                         if(FollowBack){
                             followback = 1;
@@ -153,17 +138,15 @@ public class UpdateTwitterService extends Thread{
                                 + "'"+LocalProfilePicture+"','"+LocalProfileBanner+"',"+followback
                                 + ",0)";
                         updatestatement.executeUpdate(Query);
-                        
-                    }
-                    
+                        followerscount++;   
+                    }   
                 }
-                
             } while ((cursor = pagableFollowers.getNextCursor()) != 0);
             
+            
+            //Tracking if there is someone who unfollowed you.
             String query = "SELECT * from Ahsan_Data.Twitter_Followers";
             ResultSet FollowersStatus = checkstatement.executeQuery(query) ;
-            int unfollowerscount = 0;
-            
             while(FollowersStatus.next()){
                 String UserID = FollowersStatus.getString("UserID");
                 int unfollowed = 1;
@@ -183,8 +166,33 @@ public class UpdateTwitterService extends Thread{
                     updatestatement.executeUpdate(unfollowing);
                 }
             }
-            System.out.println("Unfol   lowed by: "+unfollowerscount+" Persons");
             
+            System.out.println("Unfollowed by :"+unfollowerscount);
+            System.out.println("Followed by: "+followerscount);
+            
+            if(unfollowerscount > 0 || followerscount > 0){
+                System.out.println("Update Notifications!");
+                String updatefollower = "";
+                String Particular = "";
+                Statement updatenotification = con.createStatement();
+                if(unfollowerscount > 0){
+                    System.out.println("Update unfollowers!");
+                    Particular = "unfollowedyou";
+                    updatefollower = "INSERT INTO Ahsan_Data.Notifications "
+                            + "(ID, Particular, Quantity, DateTime)"
+                            + "VALUES (NULL, '"+Particular+"', "+unfollowerscount+", '"+new java.sql.Date(new java.util.Date().getTime())+"')";
+                    updatenotification.executeUpdate(updatefollower);
+                }
+                if(followerscount > 0){
+                    System.out.println("Update followers!");
+                    Particular = "followedyou";
+                    updatefollower = "INSERT INTO Ahsan_Data.Notifications "
+                            + "(ID, Particular, Quantity, DateTime)"
+                            + "VALUES (NULL, '"+Particular+"', "+unfollowerscount+", '"+new java.sql.Date(new java.util.Date().getTime())+"')";
+                    updatenotification.executeUpdate(updatefollower);
+                }
+                
+            }
             
         }catch(Exception ex){
             System.out.println(ex);
@@ -251,7 +259,7 @@ public class UpdateTwitterService extends Thread{
                         }
                     
                     if(found == 1){
-                        System.out.println("Entry Found!");
+
                     }else{
                         String LocalProfilePicture = "";
                         String LocalProfileBanner = "";
@@ -291,22 +299,6 @@ public class UpdateTwitterService extends Thread{
 //                                System.out.println("Cover Picture Not Found!");
 //                        
 //                        }
-                        String DB="CREATE TABLE Ahsan_Data.Twitter_Followings("
-                                + "ID int(9) NOT NULL AUTO_INCREMENT,"
-                                + "Name varchar(500),"
-                                + "ScreenName varchar(500) NOT NULL,"
-                                + "UserID varchar(100) NOT NULL,"
-                                + "StatusCount int(9),"
-                                + "Followers int(9),"
-                                + "Followings int(9),"
-                                + "ProfilePicture varchar(500),"
-                                + "ProfileBanner varchar(500),"
-                                + "Description varchar (500),"
-                                + "LocalProfilePicture varchar(500),"
-                                + "LocalProfileBanner varchar(500),"
-                                + "FollowBack int(1),"
-                                + "PRIMARY KEY (ID)"
-                                + ")";
                         
                         String Query = "INSERT INTO Ahsan_Data.Twitter_Followings(ID, Name, ScreenName, UserID, "
                                 + "StatusCount, Followers, Followings, "
@@ -324,21 +316,14 @@ public class UpdateTwitterService extends Thread{
                 }
                 
             } while ((cursor = pagableFollowings.getNextCursor()) != 0);
-            
-        
-        
-        
-        
-        
         
         
         }catch(Exception ex){
             
         }
-        
-        
+    }
+    public void UpdateBasics(Twitter twitter, Connection con){
         
     }
-
     
 }

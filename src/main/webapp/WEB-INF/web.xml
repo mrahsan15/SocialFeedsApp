@@ -40,6 +40,10 @@
         <servlet-name>twittercallback</servlet-name>
         <servlet-class>twittercallback</servlet-class>
     </servlet>
+    <servlet>
+        <servlet-name>SignIn</servlet-name>
+        <servlet-class>SignIn</servlet-class>
+    </servlet>
     <servlet-mapping>
         <servlet-name>InstaConnect</servlet-name>
         <url-pattern>/InstaConnect</url-pattern>
@@ -79,6 +83,10 @@
     <servlet-mapping>
         <servlet-name>twittercallback</servlet-name>
         <url-pattern>/twittercallback</url-pattern>
+    </servlet-mapping>
+    <servlet-mapping>
+        <servlet-name>SignIn</servlet-name>
+        <url-pattern>/signin</url-pattern>
     </servlet-mapping>
     <session-config>
         <session-timeout>

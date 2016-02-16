@@ -43,6 +43,7 @@ public class TimelineFeedObject {
     List<String> hashtags = new ArrayList<String>();
     SimpleDateFormat Time = new SimpleDateFormat("hh:mm a");
     SimpleDateFormat Date = new SimpleDateFormat("MMM d, yy");
+    twitter4j.Status retweetedstatus;
 
 
     public TimelineFeedObject(twitter4j.Status twitterstatus){
@@ -59,7 +60,7 @@ public class TimelineFeedObject {
             try{
                 Caption = twitterstatus.getText();
             }catch(Exception ex){
-                
+                Caption = "";
             }
             
             datetime = twitterstatus.getCreatedAt();
@@ -80,6 +81,8 @@ public class TimelineFeedObject {
             }
             mediaentity = twitterstatus.getMediaEntities();
             source = "twitter";
+            retweetedstatus = twitterstatus.getRetweetedStatus();
+            
         }catch(Exception ex){
             System.out.println(ex);
         }
@@ -98,7 +101,7 @@ public class TimelineFeedObject {
             try{
                 Caption = instastatus.getCaption().getText();
             }catch(Exception ex){
-                
+                Caption = "";
             }
             
             datetime = new Date(Long.parseLong(instastatus.getCreatedTime()+"000"));
@@ -107,9 +110,11 @@ public class TimelineFeedObject {
             statusid = instastatus.getId();
             if(instastatus.getType().equals("image")){
                 mediatype = "image";
+                mediaid= instastatus.getId();
                 mediaurl = instastatus.getImages().getStandardResolution().getImageUrl();
             }else if(instastatus.getType().equals("video")){
                 mediatype = "video";
+                mediaid= instastatus.getId();
                 mediaurl = instastatus.getVideos().getStandardResolution().getUrl();
             }
             comments = instastatus.getComments().getCount();

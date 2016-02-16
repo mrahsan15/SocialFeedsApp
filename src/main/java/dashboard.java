@@ -1,209 +1,136 @@
+import com.google.api.client.auth.oauth2.Credential;
+import com.google.api.services.plus.Plus;
+import com.google.api.services.plus.model.Person;
 import facebook4j.Facebook;
-import facebook4j.FacebookException;
 import facebook4j.FacebookFactory;
-import facebook4j.Friend;
-import facebook4j.Friendlist;
-import facebook4j.Paging;
 import facebook4j.PictureSize;
 import facebook4j.Reading;
-import facebook4j.ResponseList;
-import facebook4j.TaggableFriend;
-import facebook4j.User;
-import facebook4j.auth.AccessToken;
-import facebook4j.conf.Configuration;
-import facebook4j.conf.ConfigurationBuilder;
-import java.io.File;
-import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.PrintWriter;
-import java.net.URL;
 import java.sql.Connection;
 import java.sql.ResultSet;
-import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Iterator;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 import javax.servlet.ServletException;
 import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import org.jinstagram.Instagram;
-import org.jinstagram.auth.InstagramAuthService;
 import org.jinstagram.auth.model.Token;
-import org.jinstagram.auth.model.Verifier;
 import org.jinstagram.auth.oauth.InstagramService;
 import org.jinstagram.entity.users.basicinfo.UserInfo;
-import twitter4j.PagableResponseList;
-import twitter4j.Status;
+import org.jinstagram.entity.users.basicinfo.UserInfoData;
 import twitter4j.Twitter;
-import twitter4j.TwitterException;
 import twitter4j.TwitterFactory;
 
 public class dashboard extends HttpServlet {
     int FbAcc= 0;
     int TwitterAcc= 0;
     int GitHubAcc= 0,InstagramAcc=0,GooglePlusAcc = 0,LinkedInAcc=0;
-    
+    Facebook facebook = null;
+    Twitter twitter = null;
+    Instagram instagram = null;
+    ArrayList AccountsLinked  = new ArrayList();
+    ApiObjects apiobjects = null;
+    HttpServletRequest request;
+    HttpServletResponse response;
     protected void processRequest(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
+        this.request = request;
+        this.response = response;
         response.setContentType("text/html;charset=UTF-8");
         PrintWriter out = response.getWriter();
+        Connection con = new DBConnectivity().ConnectDB();
+        int LoggedUserID= 0;
         InstagramService service = null ;
-        StringBuffer callbackURL = null;
-        Connection fab = new DBConnectivity().ConnectDB();
-//        String quer = "SELECT * from TokensData.FACEBOOK_ACCOUNT";
-        Facebook facebook = null;
-//        try {
-//            Statement fabst = fab.createStatement();
-//            ResultSet fabrs = fabst.executeQuery(quer);
-//            if(fabrs.next()){
-//                String token = fabrs.getString("TOKEN");
-//                AccessToken tokenn = new AccessToken(token,null);
-//                facebook = new FacebookFactory().getInstance(tokenn);
-//                facebook.setOAuthAccessToken(tokenn);
-//                
-//            }else{
-//                response.sendRedirect(request.getContextPath()+"/login");
-//            }
-//        } catch (SQLException ex) {
-//            System.out.println(ex);
-//        } catch (IllegalStateException ex) {
-//            Logger.getLogger(dashboard.class.getName()).log(Level.SEVERE, null, ex);
+        String UserLogged = "";
+//        if(request.getSession().isNew()){
+//            response.sendRedirect("index.html");
 //        }
-//        
-        Twitter twitter = new TwitterFactory().getInstance();
-        String code = "";
-        String token = "";
-        try {
-            service = new InstagramAuthService()
-            .apiKey("e0bbe4b568cd453e925d7962ad2b9c7c")
-            .apiSecret("f11f9582bef947b4b28bf871ce36a06c")
-            .callback("http://192.168.1.100:8080/SocialFeedsApp/dashboard")
-            .build();
-            code = request.getParameter("code");
-            try{
-                Cookie[] cookies = request.getCookies();
-                for(int i = 0; i< cookies.length; i++){
-                    if((cookies[i].getName()).equals("token")){
-                        token = cookies[i].getValue();
-                    }
+        try{
+            Cookie[] cookies = request.getCookies();
+            for(int i = 0; i< cookies.length; i++){
+                if((cookies[i].getName()).equals("LoggedIn")){
+                    UserLogged= cookies[i].getValue();
+                }else{
+//                    response.sendRedirect("login.jsp");
                 }
-            }catch(Exception ex){
-                System.out.println(ex);
             }
-            try{
-                if(token.equals("")){
-                }
-            }catch(Exception ex){
-                System.out.println("Exception Caught!");
-                token = "";
-            }
-            if(token.equals("")){
-                if(request.getParameter("code").equals("null")){
-                    response.sendRedirect(service.getAuthorizationUrl(null));
-                }
-                else{
-                    Verifier verifier = new Verifier(request.getParameter("code"));
-                    Token tokens = service.getAccessToken(null, verifier);
-                    token = tokens.getToken();
-                    Cookie tokentoken = new Cookie("token",token);
-                    response.addCookie(tokentoken);
-                    String name = new Instagram(new Token(token,"")).getCurrentUserInfo().getData().getFullName();
-                    Instagram insta =new Instagram(new Token(token,""));
-                    PrintPage(insta,out,facebook,twitter);
-                }
-            }else{
-                Instagram insta = new Instagram(new Token(token,""));
-                Connection con = new DBConnectivity().ConnectDB();
-                try{
-                    Statement st = con.createStatement();
-                    String Query = "SELECT * from TokensData.INSTAGRAM_ACCOUNT WHERE ACCOUNTNAME LIKE "+insta.getCurrentUserInfo().getData().getUsername();
-                    ResultSet rs = st.executeQuery(Query);
-                    rs.next();
-                    if(rs.getString("TOKEN").equals("")){
-                    }
-                }catch(Exception ex){
-                    String Query = "INSERT INTO TokensData.INSTAGRAM_ACCOUNT (ID, ACCOUNTNAME, TOKEN)"
-                            + " VALUES (NULL, '"+insta.getCurrentUserInfo().getData().getUsername()+"', '"+token+"')";
-                    Statement st  = con.createStatement();
-                    st.executeUpdate(Query);
-                }
-                request.setAttribute("twitter", twitter);
-                request.setAttribute("instagram", insta);
-                PrintPage(insta, out,facebook,twitter);
-            }
-        }        
-        catch(Exception ex){
+        }catch(Exception ex){
             System.out.println(ex);
-            response.sendRedirect(service.getAuthorizationUrl(null));
+            System.out.println("Cookie Not Found here! Visit Some Bakery Please!");
+            
+        }
+//        if(LoggedUserID == 0){
+//            response.sendRedirect("login.jsp");
+//        }
+        String LoggedInDetail = "SELECT * from Ahsan_Data.LoginAccounts WHERE UserName = '"+UserLogged+"'";
+        Statement statement = null;
+        ResultSet LoggedInUserID;
+        try{
+            statement = con.createStatement();
+        LoggedInUserID = statement.executeQuery(LoggedInDetail);
+        if(LoggedInUserID.next()){
+           LoggedUserID = LoggedInUserID.getInt("ID");
+        }
+        }catch(Exception ex){
+            System.out.println("DB Connectivity Issue. ID not Getting!");
+        }    
+        apiobjects = new ApiObjects(con, LoggedUserID);
+        FbAcc = apiobjects.getFacebookObjects().size();
+        TwitterAcc = apiobjects.getTwitterObjects().size();
+        InstagramAcc = apiobjects.getInstagramObjects().size();
+        LinkedInAcc = apiobjects.getLinkedInObjects().size();
+        GooglePlusAcc = apiobjects.getGooglePlusObjects().size();
+        
+        try {
+            PrintPage(out);
+        }catch(Exception ex){
+            System.out.println(ex);
         }
     }
     
     
-    public void PrintPage(Instagram insta,PrintWriter out,Facebook facebook,Twitter twitter){
+    public void PrintPage(PrintWriter out){
+        CommonWidgets widgets = new CommonWidgets(out) ;
+        
         UserInfo info = null;
         Connection con = new DBConnectivity().ConnectDB();
         Statement getAccountList =null;
+        String AccountUserInfo = "SELECT * from Ahsan_Data.LoginAccounts";
         String TwitterFollowersQuery = "SELECT * from Ahsan_Data.Twitter_Followers";
         String TwitterFollowingsQuery = "SELECT * from Ahsan_Data.Twitter_Followings";
         String InstaFollowersQuery = "SELECT * from Ahsan_Data.Insta_Followers";
         String InstaFollowingsQuery = "SELECT * from Ahsan_Data.Insta_Followings";
         ResultSet AccountList = null;
-        
         try {
+            String FullName = "";
+            String ProfilePicture = "";
             getAccountList= con.createStatement();
-            info = insta.getCurrentUserInfo();
+            ResultSet UserInfo = getAccountList.executeQuery(AccountUserInfo);
+            if(UserInfo.next()){
+                FullName  = UserInfo.getString("FirstName")+" "+UserInfo.getString("LastName");
+                ProfilePicture = UserInfo.getString("ProfilePic");
+            }
             String CopyRightSyntax = "Copyright Apisylux Dashboard Panel 2016";
-//            String ProfilePic = info.getData().getProfilePicture();
-            String FullName  = info.getData().getFullName();
-            String CurrentUserID = info.getData().getId();
-            String Bio = info.getData().getBio();
-            int follower = info.getData().getCounts().getFollowedBy();
-            int following = info.getData().getCounts().getFollows();
-            int mediacount = info.getData().getCounts().getMedia();
             
-            
-//            String FbFullName = facebook.getName();
-//            User MyFb;
-//            
-//            MyFb = facebook.users().getUser(facebook.getId(), new Reading().fields("email","bio","work","picture","cover"));
-//            String FbBio = MyFb.getBio();
-//            String FbUserName;
-//            FbUserName = MyFb.getUsername();
-//            String FbCover = MyFb.getCover().getSource();
-//            String FbProfilePicture =facebook.getPictureURL(PictureSize.large).toString();
-//            int FacebookFriendsCount = facebook.getFriends().getSummary().getTotalCount();
-            
-            
-            String TwitterName = twitter.getScreenName();
-            twitter4j.User MyTwitter =twitter.users().showUser(TwitterName);
-            String TwitterProfilePicture = MyTwitter.getOriginalProfileImageURL();
-            String TwitterBio = MyTwitter.getDescription();
-            int TwitterTweets = MyTwitter.getStatusesCount();
-            int TwitterFollowers = MyTwitter.getFollowersCount();
-            int TwitterFollowings = MyTwitter.getFriendsCount();
-            
-            new CommonWidgets(insta,out).HeadRegion(out);
+            widgets.HeadRegion(out);
             out.println("<body>");
             out.println(
 "		<!-- Header Start -->\n" +
 "		<header>\n" );
-            new CommonWidgets(insta,out).Logo(out);
-            new CommonWidgets(insta,out).Search(out);
-            new CommonWidgets(insta,out).RightNavBar(out);
+            widgets.Logo(out);
+            widgets.Search(out);
+            widgets.RightNavBar(out);
             out.println(
                     "</header>\n" +
 "		<!-- Header ends -->\n");
             out.println(
 "		<!-- Left sidebar starts -->\n" +
 "		<aside id=\"sidebar\">\n");
-            new CommonWidgets(insta,out).CurrentUser(out);
-            new CommonWidgets(insta,out).Menu(out, "Dashboard");
+            widgets.CurrentUser(out);
+            widgets.Menu(out, "Dashboard");
             out.println(
 "			<!-- Freebies Starts -->\n" +
 "			<div class=\"freebies\">\n" +
@@ -234,7 +161,6 @@ public class dashboard extends HttpServlet {
 "						</li>         \n" +
 "					</ul>\n" +
 "				</div>\n" +
-"\n" +
 "			</div>\n" +
 "			<!-- Freebies Starts -->\n" );
             out.println(
@@ -247,7 +173,7 @@ public class dashboard extends HttpServlet {
 "			<!-- Top Bar starts -->\n" +
 "			<div class=\"top-bar\">\n" +
 "				<div class=\"page-title\">\n" +
-"					"+FullName+"\n" +
+"					"+FullName+
 "				</div>\n");
             out.println(
 "				<ul class=\"stats hidden-xs\">\n");
@@ -257,7 +183,7 @@ public class dashboard extends HttpServlet {
 //"							<span id=\"downloads_graph\"></span>\n" +
 "						</div>\n" +
 "						<div class=\"stats-details\">\n" +
-"							<h4><span id=\"\">"+follower+"</span> <i class=\"fa fa-chevron-up up\"></i></h4>\n" +
+//"							<h4><span id=\"\">"+follower+"</span> <i class=\"fa fa-chevron-up up\"></i></h4>\n" +
 "							<h5>Followers</h5>\n" +
 "						</div>\n" +
 "					</li>\n");
@@ -267,7 +193,7 @@ public class dashboard extends HttpServlet {
 //"							<span id=\"users_online_graph\"></span>\n" +
 "						</div>\n" +
 "						<div class=\"stats-details\">\n" +
-"							<h4><span id=\"\">"+following+"</span> <i class=\"fa fa-chevron-down down\"></i></h4>\n" +
+//"							<h4><span id=\"\">"+following+"</span> <i class=\"fa fa-chevron-down down\"></i></h4>\n" +
 "							<h5>Followings</h5>\n" +
 "						</div>\n" +
 "					</li>\n");
@@ -354,8 +280,145 @@ public class dashboard extends HttpServlet {
             out.println(
 "					<!-- Spacer starts -->\n" +
 "					<div class=\"spacer\">\n" );
+            ArrayList Accounts = apiobjects.getFacebookObjects();
+            for(int i = 0; i < FbAcc; i++){
+                TokenPackets tokenpacket = (TokenPackets) Accounts.get(i);
+                String token = tokenpacket.Token;
+                Facebook facebook = new FacebookFactory().getInstance(new facebook4j.auth.AccessToken(token, null));
+                
+                Reading reading = new Reading().fields("id","bio","name");
+                
+                facebook4j.User user= facebook.users().getMe(reading);
+                String FBProfilePic= "";
+                try{
+                    FBProfilePic = facebook.getPictureURL(PictureSize.large).toString();
+                }catch(Exception ex){
+                    
+                }
+                String ID = user.getId();
+                String FBName = user.getName();
+                String Bio = user.getBio();
+                
+                
+                out.println(
+"						<!-- Row Start -->\n" +
+"						<div class=\"row\">\n" +
+"							<div class=\"col-lg-6 col-md-6 col-sm-12 col-xs-12\">\n");
+            out.println(
+"								<!-- Widget starts -->\n");
+            out.println(
+"								<div class=\"blog\">\n" );
+            out.println(
+"									<div class=\"blog-header\">\n" +
+"										<h5 class=\"blog-title\">Facebook Panel</h5>\n" +
+"									</div>\n");
+            out.println(
+"									<div class=\"blog-body\">\n" +
+"										<div class=\"row\">\n");
+            out.println(
+"											<div class=\"col-lg-10 col-md-10 col-sm-12 col-xs-12\">\n" +
+"												<div class=\"chart-height-lg\" style=\"height:320px;\">"
+        + "<img src=\""
+        +FBProfilePic
+        +"\" width=\"150\" height=\"150\" /><h3 style=\"text-color: black; margin-top: -130px; margin-left: 170px;\">"+FBName+"</h3>"
+        +"<br><br><p style=\"font-size:15px; margin-left: 170px;\">"+Bio+"</p>"
+        + "</div>\n" +
+"											</div>\n");
+//            out.println(
+//"											<div class=\"visitors-total\">\n" +
+//"												<h3 style=\"margin-right: 125px;\">"+TwitterFollowers+"</h3>\n" +
+//"												<p style=\"margin-right: 125px;\">Twitter Followers</p>\n" +
+//"											</div>\n");
+            out.println(
+"											<div class=\"visitors-total\">\n" +
+"												<h3>"+""+"</h3>\n" +
+//"												<p>Total Tweets</p>\n" +
+"											</div>\n");
+            out.println(
+"											<div class=\"visit-stats\">\n" +
+"												<ul class=\"clearfix\">\n" );
+            out.println(
+"												</ul>\n" +
+"											</div>\n" +
+"										</div>\n" +
+"									</div>\n" +
+"								</div>\n" +
+"								<!-- Widget ends -->\n"
+        + "</div>");
+                        out.println(
+"								<div class=\"col-lg-6 col-md-6 col-sm-12 col-xs-12\">"
+        + "<!-- Widget starts -->\n" +
+"								<div class=\"blog blog-info\">\n" );
+            out.println(
+"									<div class=\"blog-header\">\n" +
+"										<h5 class=\"blog-title\">Facebook Friends: "+ facebook.friends().getBelongsFriend(ID).getSummary().getTotalCount()+"</h5>\n" +
+"									</div>\n");
+            out.println(
+"									<div class=\"blog-body\" style=\"overflow:scroll; height:350px;\">\n" +
+"										<ul class=\"clients-list\">\n");
             
-
+//            AccountList = getAccountList.executeQuery(TwitterFollowersQuery);
+//            try{
+//                while(AccountList.next()){
+//                String ProfilePic = AccountList.getString("ProfilePicture");
+//                String ProfileBan = AccountList.getString("ProfileBanner");
+//                String ScreenName = AccountList.getString("ScreenName");
+//                String UserName = AccountList.getString("Name");
+//                String UserId = AccountList.getString("UserID");
+//                String Following = "";
+//                if(AccountList.getInt("FollowBack") == 1){
+//                    Following = "<button type=\"button\" class=\"btn btn-info btn-rounded\">Following</button>";
+//                }else{
+//                    Following = "<button type=\"button\" class=\"btn btn-info btn-rounded\">Follow</button>";
+//                }
+//                
+//                out.println(
+//"<li class=\"client clearfix\">\n" +
+//"<img src=\""+ProfilePic+"\" class=\"avatar\" alt=\"Client\">\n" +
+//"<div class=\"client-details\">\n" +
+//"<p>\n" +
+//"<span class=\"name\"><a href=\"Profile?username="+UserId+"&source=twitter\">"+UserName+"</a></span>\n" +
+//"<span class=\"email\"><a href=\"Profile?username="+UserId+"&source=twitter\">@"+ScreenName+"</a></span>\n" +
+//"</p>\n" +
+//"<ul class=\"icons-nav\">\n" +
+//        Following +
+//"</ul>\n" +
+//"</div>\n" +
+//"</li>\n");
+//            }
+//            }catch(Exception ex){
+//                System.out.println("Twitter Followers Query Issue!");
+//            }
+            
+            out.println(
+"										</ul>\n" +
+"									</div>\n" +
+"								</div>\n" +
+"								<!-- Widget ends -->\n");
+            out.println(
+"							</div>\n");
+            out.println(
+"							\n" +
+"						</div>\n" +
+"						<!-- Row End -->\n");
+            }
+            Accounts = apiobjects.getTwitterObjects();
+            for(int i = 0; i < TwitterAcc; i++){
+                try{
+                    
+                TokenPackets tokenpackets = (TokenPackets) Accounts.get(i);
+                String token = tokenpackets.Token;
+                String tokensecret = tokenpackets.TokenSecret;
+                Twitter twitter = new TwitterFactory().getInstance(new twitter4j.auth.AccessToken(token,tokensecret));
+                
+                String TwitterScreenName = twitter.getScreenName();
+                twitter4j.User user  = twitter.users().showUser(TwitterScreenName);
+                String TwitterFullName = user.getName();
+                String TwitterProfilePicture = user.getOriginalProfileImageURL();
+                String TwitterBio = user.getDescription();
+                int mediacount = user.getStatusesCount();
+                int TwitterFollowers = user.getFollowersCount();
+                int TwitterFollowings = user.getFriendsCount();
             out.println(
 "						<!-- Row Start -->\n" +
 "						<div class=\"row\">\n" +
@@ -375,20 +438,17 @@ public class dashboard extends HttpServlet {
 "											<div class=\"col-lg-10 col-md-10 col-sm-12 col-xs-12\">\n" +
 "												<div class=\"chart-height-lg\">"
         + "<img src=\""
-        +TwitterProfilePicture
-        +"\" width=\"150\" height=\"150\" /><h3 style=\"text-color: black; margin-top: -130px; margin-left: 170px;\">"+TwitterName+"</h3>"
+        + TwitterProfilePicture
+        +"\" width=\"150\" height=\"150\" />"
+        + "<h3 style=\"text-color: black; margin-top: -130px; margin-left: 170px;\">"+TwitterFullName+"</h3>"
+        + "<p style=\"text-color: black; margin-left: 170px;\">("+TwitterScreenName+")</p>"
         +"<br><br><p style=\"font-size:15px; margin-left: 170px;\">"+TwitterBio+"</p>"
         + "</div>\n" +
 "											</div>\n");
-//            out.println(
-//"											<div class=\"visitors-total\">\n" +
-//"												<h3 style=\"margin-right: 125px;\">"+TwitterFollowers+"</h3>\n" +
-//"												<p style=\"margin-right: 125px;\">Twitter Followers</p>\n" +
-//"											</div>\n");
             out.println(
 "											<div class=\"visitors-total\">\n" +
-"												<h3>"+TwitterTweets+"</h3>\n" +
-"												<p>Total Tweets</p>\n" +
+"												<h3>"+mediacount+"</h3>\n" +
+"												<p>Tweets</p>\n" +
 "											</div>\n");
             out.println(
 "											<div class=\"visit-stats\">\n" +
@@ -404,7 +464,8 @@ public class dashboard extends HttpServlet {
 "							</div>\n" +
 "						</div>\n" +
 "						<!-- Row End -->\n");
-                        out.println(
+            
+                                    out.println(
 "						<!-- Row Start -->\n" +
 "						<div class=\"row\">\n" +
 "							<div class=\"col-lg-12 col-md-12 col-sm-12 col-xs-12\">\n" );
@@ -416,9 +477,10 @@ public class dashboard extends HttpServlet {
             out.println(
 "						<!-- Row Start -->\n" +
 "						<div class=\"row\">\n" +
-"							<div class=\"col-lg-6 col-md-6 col-sm-12 col-xs-12\">\n" );
+"							\n" );
             out.println(
-"								<!-- Widget starts -->\n" +
+"								<div class=\"col-lg-6 col-md-6 col-sm-12 col-xs-12\">"
+        + "<!-- Widget starts -->\n" +
 "								<div class=\"blog blog-info\">\n" );
             out.println(
 "									<div class=\"blog-header\">\n" +
@@ -428,39 +490,39 @@ public class dashboard extends HttpServlet {
 "									<div class=\"blog-body\" style=\"overflow:scroll; height:350px;\">\n" +
 "										<ul class=\"clients-list\">\n");
             
-            AccountList = getAccountList.executeQuery(TwitterFollowersQuery);
-            try{
-                while(AccountList.next()){
-                String ProfilePic = AccountList.getString("ProfilePicture");
-                String ProfileBan = AccountList.getString("ProfileBanner");
-                String ScreenName = AccountList.getString("ScreenName");
-                String UserName = AccountList.getString("Name");
-                String UserId = AccountList.getString("UserID");
-                String Following = "";
-                if(AccountList.getInt("FollowBack") == 1){
-                    Following = "<button type=\"button\" class=\"btn btn-info btn-rounded\">Following</button>";
-                }else{
-                    Following = "<button type=\"button\" class=\"btn btn-info btn-rounded\">Follow</button>";
-                }
-                
-                out.println(
-"<li class=\"client clearfix\">\n" +
-"   <img src=\""+ProfilePic+"\" class=\"avatar\" alt=\"Client\">\n" +
-"   <div class=\"client-details\">\n" +
-"       <p>\n" +
-"           <span class=\"name\"><a href=\"Profile?username="+UserId+"&source=twitter\">"+UserName+"</a></span>\n" +
-"           <span class=\"email\"><a href=\"Profile?username="+UserId+"&source=twitter\">@"+ScreenName+"</a></span>\n" +
-"       </p>\n" +
-"       <ul class=\"icons-nav\">\n" +
-        Following +
-"</ul>\n" +
-"</div>\n" +
-"</li>\n");
-            }
-            }catch(Exception ex){
-                System.out.println("Twitter Followers Query Issue!");
-            }
-            
+//            AccountList = getAccountList.executeQuery(TwitterFollowersQuery);
+//            try{
+//                while(AccountList.next()){
+//                String ProfilePic = AccountList.getString("ProfilePicture");
+//                String ProfileBan = AccountList.getString("ProfileBanner");
+//                String ScreenName = AccountList.getString("ScreenName");
+//                String UserName = AccountList.getString("Name");
+//                String UserId = AccountList.getString("UserID");
+//                String Following = "";
+//                if(AccountList.getInt("FollowBack") == 1){
+//                    Following = "<button type=\"button\" class=\"btn btn-info btn-rounded\">Following</button>";
+//                }else{
+//                    Following = "<button type=\"button\" class=\"btn btn-info btn-rounded\">Follow</button>";
+//                }
+//                
+//                out.println(
+//"<li class=\"client clearfix\">\n" +
+//"<img src=\""+ProfilePic+"\" class=\"avatar\" alt=\"Client\">\n" +
+//"<div class=\"client-details\">\n" +
+//"<p>\n" +
+//"<span class=\"name\"><a href=\"Profile?username="+UserId+"&source=twitter\">"+UserName+"</a></span>\n" +
+//"<span class=\"email\"><a href=\"Profile?username="+UserId+"&source=twitter\">@"+ScreenName+"</a></span>\n" +
+//"</p>\n" +
+//"<ul class=\"icons-nav\">\n" +
+//        Following +
+//"</ul>\n" +
+//"</div>\n" +
+//"</li>\n");
+//            }
+//            }catch(Exception ex){
+//                System.out.println("Twitter Followers Query Issue!");
+//            }
+//            
             
             
             out.println(
@@ -484,40 +546,40 @@ public class dashboard extends HttpServlet {
 "										<ul class=\"clients-list\">\n" );
 
             
-            AccountList = getAccountList.executeQuery(TwitterFollowingsQuery);
-            try{
-                while(AccountList.next()){
-                String ProfilePic = AccountList.getString("ProfilePicture");
-                String ProfileBan = AccountList.getString("ProfileBanner");
-                String ScreenName = AccountList.getString("ScreenName");
-                String UserName = AccountList.getString("Name");
-                String UserId = AccountList.getString("UserID");
-                String Following = "";
-                if(AccountList.getInt("FollowBack") == 1){
-                    Following = "<button type=\"button\" class=\"btn btn-info btn-rounded\">Following</button>";
-                }else{
-                    Following = "<button type=\"button\" class=\"btn btn-info btn-rounded\">Follow</button>";
-                }
-                
-                out.println(
-"<li class=\"client clearfix\">\n" +
-"   <img src=\""+ProfilePic+"\" class=\"avatar\" alt=\"Client\">\n" +
-"   <div class=\"client-details\">\n" +
-"       <p>\n" +
-"           <span class=\"name\"><a href=\"Profile?username="+UserId+"&source=twitter\">"+UserName+"</a></span>\n" +
-"           <span class=\"email\"><a href=\"Profile?username="+UserId+"&source=twitter\">@"+ScreenName+"</a></span>\n" +
-"       </p>\n" +
-"       <ul class=\"icons-nav\">\n" +
-        Following +
-"</ul>\n" +
-"</div>\n" +
-"</li>\n");
-            }
-            
-            }catch(Exception ex){
-                System.out.println("Twitter Followings Query Error!");
-            }
-            
+//            AccountList = getAccountList.executeQuery(TwitterFollowingsQuery);
+//            try{
+//                while(AccountList.next()){
+//                String ProfilePic = AccountList.getString("ProfilePicture");
+//                String ProfileBan = AccountList.getString("ProfileBanner");
+//                String ScreenName = AccountList.getString("ScreenName");
+//                String UserName = AccountList.getString("Name");
+//                String UserId = AccountList.getString("UserID");
+//                String Following = "";
+//                if(AccountList.getInt("FollowBack") == 1){
+//                    Following = "<button type=\"button\" class=\"btn btn-info btn-rounded\">Following</button>";
+//                }else{
+//                    Following = "<button type=\"button\" class=\"btn btn-info btn-rounded\">Follow</button>";
+//                }
+//                
+//                out.println(
+//"<li class=\"client clearfix\">\n" +
+//"<img src=\""+ProfilePic+"\" class=\"avatar\" alt=\"Client\">\n" +
+//"<div class=\"client-details\">\n" +
+//"<p>\n" +
+//"<span class=\"name\"><a href=\"Profile?username="+UserId+"&source=twitter\">"+UserName+"</a></span>\n" +
+//"<span class=\"email\"><a href=\"Profile?username="+UserId+"&source=twitter\">@"+ScreenName+"</a></span>\n" +
+//"</p>\n" +
+//"<ul class=\"icons-nav\">\n" +
+//        Following +
+//"</ul>\n" +
+//"</div>\n" +
+//"</li>\n");
+//            }
+//            
+//            }catch(Exception ex){
+//                System.out.println("Twitter Followings Query Error!");
+//            }
+//            
             out.println(
 "										</ul>\n" +
 "									</div>\n" +
@@ -528,8 +590,34 @@ public class dashboard extends HttpServlet {
 "							</div>\n" +
 "						</div>\n" +
 "						<!-- Row End -->\n");
-            
-            out.println(
+
+
+                }catch(Exception ex){
+                    
+                }
+                
+            }
+            Accounts = apiobjects.getInstagramObjects();
+            for(int i = 0; i < InstagramAcc; i++){
+                TokenPackets tokenpackets = (TokenPackets) Accounts.get(i);
+                String token = tokenpackets.Token;
+                Instagram instagram = null;
+                UserInfoData user = null;
+                try{
+                    instagram = new Instagram(new Token(token, ""));
+                    user = instagram.getCurrentUserInfo().getData();
+                }catch(Exception ex){
+                    response.sendRedirect("InstaConnect");
+                }
+                String InstagramName = user.getFullName();
+                String InstagramUsername = user.getUsername();
+                String InstagramBio = user.getBio();
+                String InstagramProfilePicture = user.getProfilePicture();
+                int mediacount = user.getCounts().getMedia();
+                int InstagramFollowers= user.getCounts().getFollowedBy();
+                int InstagramFollowings = user.getCounts().getFollows();
+                
+                out.println(
 "						<!-- Row Start -->\n" +
 "						<div class=\"row\">\n" +
 "							<div class=\"col-lg-12 col-md-12 col-sm-12 col-xs-12\">\n");
@@ -548,15 +636,17 @@ public class dashboard extends HttpServlet {
 "											<div class=\"col-lg-10 col-md-10 col-sm-12 col-xs-12\">\n" +
 "												<div class=\"chart-height-lg\">"
         + "<img src=\""
-//        +ProfilePic
-        +"\" /><h3 style=\"text-color: black; margin-top: -130px; margin-left: 170px;\">"+FullName+"</h3>"
-        +"<br><br><p style=\"font-size:15px; margin-left: 170px;\">"+Bio+"</p>"
+        + InstagramProfilePicture
+        +"\" width=\"150\" height=\"150\" />"
+        + "<h3 style=\"text-color: black; margin-top: -130px; margin-left: 170px;\">"+InstagramName+"</h3>"
+        + "<p style=\"text-color: black; margin-left: 170px;\">"+ "("+InstagramUsername+")"+"</p>"
+        +"<br><br><p style=\"font-size:15px; margin-left: 170px;\">"+InstagramBio+"</p>"
         + "</div>\n" +
 "											</div>\n");
             out.println(
 "											<div class=\"visitors-total\">\n" +
 "												<h3>"+mediacount+"</h3>\n" +
-"												<p>Media Uploaded</p>\n" +
+"												<p>Posts</p>\n" +
 "											</div>\n");
             out.println(
 "											<div class=\"visit-stats\">\n" +
@@ -572,58 +662,66 @@ public class dashboard extends HttpServlet {
 "							</div>\n" +
 "						</div>\n" +
 "						<!-- Row End -->\n");
-                        
+            
+                                    out.println(
+"						<!-- Row Start -->\n" +
+"						<div class=\"row\">\n" +
+"							<div class=\"col-lg-12 col-md-12 col-sm-12 col-xs-12\">\n" );
+
+            out.println(
+"							</div>\n" +
+"						</div>\n" +
+"						<!-- Row End -->\n");
             out.println(
 "						<!-- Row Start -->\n" +
 "						<div class=\"row\">\n" +
-"							<div class=\"col-lg-6 col-md-6 col-sm-12 col-xs-12\">\n" );
+"							\n" );
             out.println(
-"								<!-- Widget starts -->\n" +
+"								<div class=\"col-lg-6 col-md-6 col-sm-12 col-xs-12\">"
+        + "<!-- Widget starts -->\n" +
 "								<div class=\"blog blog-info\">\n" );
             out.println(
 "									<div class=\"blog-header\">\n" +
-"										<h5 class=\"blog-title\">Followers "+ follower+"</h5>\n" +
+"										<h5 class=\"blog-title\">Instagram Followers "+ InstagramFollowers+"</h5>\n" +
 "									</div>\n");
             out.println(
 "									<div class=\"blog-body\" style=\"overflow:scroll; height:350px;\">\n" +
 "										<ul class=\"clients-list\">\n");
             
-
+//            AccountList = getAccountList.executeQuery(TwitterFollowersQuery);
+//            try{
+//                while(AccountList.next()){
+//                String ProfilePic = AccountList.getString("ProfilePicture");
+//                String ProfileBan = AccountList.getString("ProfileBanner");
+//                String ScreenName = AccountList.getString("ScreenName");
+//                String UserName = AccountList.getString("Name");
+//                String UserId = AccountList.getString("UserID");
+//                String Following = "";
+//                if(AccountList.getInt("FollowBack") == 1){
+//                    Following = "<button type=\"button\" class=\"btn btn-info btn-rounded\">Following</button>";
+//                }else{
+//                    Following = "<button type=\"button\" class=\"btn btn-info btn-rounded\">Follow</button>";
+//                }
+//                
+//                out.println(
+//"<li class=\"client clearfix\">\n" +
+//"<img src=\""+ProfilePic+"\" class=\"avatar\" alt=\"Client\">\n" +
+//"<div class=\"client-details\">\n" +
+//"<p>\n" +
+//"<span class=\"name\"><a href=\"Profile?username="+UserId+"&source=twitter\">"+UserName+"</a></span>\n" +
+//"<span class=\"email\"><a href=\"Profile?username="+UserId+"&source=twitter\">@"+ScreenName+"</a></span>\n" +
+//"</p>\n" +
+//"<ul class=\"icons-nav\">\n" +
+//        Following +
+//"</ul>\n" +
+//"</div>\n" +
+//"</li>\n");
+//            }
+//            }catch(Exception ex){
+//                System.out.println("Twitter Followers Query Issue!");
+//            }
+//            
             
-            AccountList = getAccountList.executeQuery(InstaFollowersQuery);
-            try{
-                while(AccountList.next()){
-                String ProfilePic = AccountList.getString("ProfilePicture");
-                String ProfileBan = AccountList.getString("ProfileBanner");
-                String ScreenName = AccountList.getString("ScreenName");
-                String UserName = AccountList.getString("Name");
-                String UserId = AccountList.getString("UserID");
-                String Following = "";
-                if(AccountList.getInt("FollowBack") == 1){
-                    Following = "<button type=\"button\" class=\"btn btn-info btn-rounded\">Following</button>";
-                }else{
-                    Following = "<button type=\"button\" class=\"btn btn-info btn-rounded\">Follow</button>";
-                }
-                
-                out.println(
-"<li class=\"client clearfix\">\n" +
-"   <img src=\""+ProfilePic+"\" class=\"avatar\" alt=\"Client\">\n" +
-"   <div class=\"client-details\">\n" +
-"       <p>\n" +
-"           <span class=\"name\"><a href=\"Profile?username="+UserId+"&source=insta\">"+UserName+"</a></span>\n" +
-"           <span class=\"email\"><a href=\"Profile?username="+UserId+"&source=insta\">@"+ScreenName+"</a></span>\n" +
-"       </p>\n" +
-"       <ul class=\"icons-nav\">\n" +
-        Following +
-"</ul>\n" +
-"</div>\n" +
-"</li>\n");
-            }
-            
-            }catch(Exception ex){
-                System.out.println("Insta Followers Query Error!");
-            }
-                        
             
             out.println(
 "										</ul>\n" +
@@ -633,52 +731,53 @@ public class dashboard extends HttpServlet {
             out.println(
 "							</div>\n");
             out.println(
-"							<div class=\"col-lg-6 col-md-6 col-sm-12 col-xs-12\">\n" +
+"							<div class=\"col-lg-6 col-md-6 col-sm-12 col-xs-12\">\n");
+            out.println(
 "								<!-- Widget starts -->\n" +
 "								<div class=\"blog blog-danger\">\n");
             out.println(
 "									<div class=\"blog-header\">\n" +
-"										<h5 class=\"blog-title\">Followings "+following+"</h5>\n" +
+"										<h5 class=\"blog-title\">Instagram Followings "+InstagramFollowings+"</h5>\n" +
 "									</div>\n");
             out.println(
 "									<div class=\"blog-body\" style=\"overflow:scroll; height:350px;\">\n" +
 "										<ul class=\"clients-list\">\n" );
 
             
-            AccountList = getAccountList.executeQuery(InstaFollowingsQuery);
-            try{
-                while(AccountList.next()){
-                String ProfilePic = AccountList.getString("ProfilePicture");
-                String ProfileBan = AccountList.getString("ProfileBanner");
-                String ScreenName = AccountList.getString("ScreenName");
-                String UserName = AccountList.getString("Name");
-                String UserId = AccountList.getString("UserID");
-                String Following = "";
-                if(AccountList.getInt("FollowBack") == 1){
-                    Following = "<button type=\"button\" class=\"btn btn-info btn-rounded\">Following</button>";
-                }else{
-                    Following = "<button type=\"button\" class=\"btn btn-info btn-rounded\">Follow</button>";
-                }
-                
-                out.println(
-"<li class=\"client clearfix\">\n" +
-"   <img src=\""+ProfilePic+"\" class=\"avatar\" alt=\"Client\">\n" +
-"   <div class=\"client-details\">\n" +
-"       <p>\n" +
-"           <span class=\"name\"><a href=\"Profile?username="+UserId+"&source=insta\">"+UserName+"</a></span>\n" +
-"           <span class=\"email\"><a href=\"Profile?username="+UserId+"&source=insta\">@"+ScreenName+"</a></span>\n" +
-"       </p>\n" +
-"       <ul class=\"icons-nav\">\n" +
-        Following +
-"</ul>\n" +
-"</div>\n" +
-"</li>\n");
-            }
-            
-            }catch(Exception ex){
-                System.out.println("Insta Followings Query");
-            }
-            
+//            AccountList = getAccountList.executeQuery(TwitterFollowingsQuery);
+//            try{
+//                while(AccountList.next()){
+//                String ProfilePic = AccountList.getString("ProfilePicture");
+//                String ProfileBan = AccountList.getString("ProfileBanner");
+//                String ScreenName = AccountList.getString("ScreenName");
+//                String UserName = AccountList.getString("Name");
+//                String UserId = AccountList.getString("UserID");
+//                String Following = "";
+//                if(AccountList.getInt("FollowBack") == 1){
+//                    Following = "<button type=\"button\" class=\"btn btn-info btn-rounded\">Following</button>";
+//                }else{
+//                    Following = "<button type=\"button\" class=\"btn btn-info btn-rounded\">Follow</button>";
+//                }
+//                
+//                out.println(
+//"<li class=\"client clearfix\">\n" +
+//"<img src=\""+ProfilePic+"\" class=\"avatar\" alt=\"Client\">\n" +
+//"<div class=\"client-details\">\n" +
+//"<p>\n" +
+//"<span class=\"name\"><a href=\"Profile?username="+UserId+"&source=twitter\">"+UserName+"</a></span>\n" +
+//"<span class=\"email\"><a href=\"Profile?username="+UserId+"&source=twitter\">@"+ScreenName+"</a></span>\n" +
+//"</p>\n" +
+//"<ul class=\"icons-nav\">\n" +
+//        Following +
+//"</ul>\n" +
+//"</div>\n" +
+//"</li>\n");
+//            }
+//            
+//            }catch(Exception ex){
+//                System.out.println("Twitter Followings Query Error!");
+//            }
+//            
             out.println(
 "										</ul>\n" +
 "									</div>\n" +
@@ -689,7 +788,197 @@ public class dashboard extends HttpServlet {
 "							</div>\n" +
 "						</div>\n" +
 "						<!-- Row End -->\n");
+                
+            }
+            
+            Accounts = apiobjects.getGooglePlusObjects();
+            for(int i = 0 ; i < GooglePlusAcc; i++){
+                TokenPackets tokenpackets = (TokenPackets) Accounts.get(i);
+                String token = tokenpackets.Token;
+                Credential credential = new GoogleObjectCall().getFlow().loadCredential(token);
+                Plus plus = new GoogleObjectCall().getPlus(credential);
+                Person plusinfo = plus.people().get("me").execute();
+                String PlusProfilePicture = plusinfo.getImage().getUrl().replace("sz=50", "sz=150");
+                String PlusFullName = plusinfo.getDisplayName();
+                String PlusBio = plusinfo.getTagline();
+                
+                int PlusFollowers = plusinfo.getCircledByCount();
+                    out.println(
+"						<!-- Row Start -->\n" +
+"						<div class=\"row\">\n" +
+"							<div class=\"col-lg-12 col-md-12 col-sm-12 col-xs-12\">\n");
+            out.println(
+"								<!-- Widget starts -->\n");
+            out.println(
+"								<div class=\"blog\">\n" );
+            out.println(
+"									<div class=\"blog-header\">\n" +
+"										<h5 class=\"blog-title\">GooglePlus Panel</h5>\n" +
+"									</div>\n");
+            out.println(
+"									<div class=\"blog-body\">\n" +
+"										<div class=\"row\">\n");
+            out.println(
+"											<div class=\"col-lg-10 col-md-10 col-sm-12 col-xs-12\">\n" +
+"												<div class=\"chart-height-lg\">"
+        + "<img src=\""
+        + PlusProfilePicture
+        +"\" width=\"150\" height=\"150\" />"
+        + "<h3 style=\"text-color: black; margin-top: -130px; margin-left: 170px;\">"+PlusFullName+"</h3>"
+        +"<br><div><p style=\"font-size:15px; margin-left: 170px;\">"+PlusBio+"</p></div>"
+        + "</div>\n" +
+"											</div>\n");
+            out.println(
+"											<div class=\"visitors-total\">\n" +
+"												<h3>"+""+"</h3>\n" +
+"												<p>Posts</p>\n" +
+"											</div>\n");
+            out.println(
+"											<div class=\"visit-stats\">\n" +
+"												<ul class=\"clearfix\">\n" );
+            out.println(
+"												</ul>\n" +
+"											</div>\n" +
+"										</div>\n" +
+"									</div>\n" +
+"								</div>\n" +
+"								<!-- Widget ends -->\n");
+            out.println(
+"							</div>\n" +
+"						</div>\n" +
+"						<!-- Row End -->\n");
+            
+                                    out.println(
+"						<!-- Row Start -->\n" +
+"						<div class=\"row\">\n" +
+"							<div class=\"col-lg-12 col-md-12 col-sm-12 col-xs-12\">\n" );
 
+            out.println(
+"							</div>\n" +
+"						</div>\n" +
+"						<!-- Row End -->\n");
+            out.println(
+"						<!-- Row Start -->\n" +
+"						<div class=\"row\">\n" +
+"							\n" );
+            out.println(
+"								<div class=\"col-lg-6 col-md-6 col-sm-12 col-xs-12\">"
+        + "<!-- Widget starts -->\n" +
+"								<div class=\"blog blog-info\">\n" );
+            out.println(
+"									<div class=\"blog-header\">\n" +
+"										<h5 class=\"blog-title\">Plus Followers: "+ PlusFollowers+"</h5>\n" +
+"									</div>\n");
+            out.println(
+"									<div class=\"blog-body\" style=\"overflow:scroll; height:350px;\">\n" +
+"										<ul class=\"clients-list\">\n");
+            
+//            AccountList = getAccountList.executeQuery(TwitterFollowersQuery);
+//            try{
+//                while(AccountList.next()){
+//                String ProfilePic = AccountList.getString("ProfilePicture");
+//                String ProfileBan = AccountList.getString("ProfileBanner");
+//                String ScreenName = AccountList.getString("ScreenName");
+//                String UserName = AccountList.getString("Name");
+//                String UserId = AccountList.getString("UserID");
+//                String Following = "";
+//                if(AccountList.getInt("FollowBack") == 1){
+//                    Following = "<button type=\"button\" class=\"btn btn-info btn-rounded\">Following</button>";
+//                }else{
+//                    Following = "<button type=\"button\" class=\"btn btn-info btn-rounded\">Follow</button>";
+//                }
+//                
+//                out.println(
+//"<li class=\"client clearfix\">\n" +
+//"<img src=\""+ProfilePic+"\" class=\"avatar\" alt=\"Client\">\n" +
+//"<div class=\"client-details\">\n" +
+//"<p>\n" +
+//"<span class=\"name\"><a href=\"Profile?username="+UserId+"&source=twitter\">"+UserName+"</a></span>\n" +
+//"<span class=\"email\"><a href=\"Profile?username="+UserId+"&source=twitter\">@"+ScreenName+"</a></span>\n" +
+//"</p>\n" +
+//"<ul class=\"icons-nav\">\n" +
+//        Following +
+//"</ul>\n" +
+//"</div>\n" +
+//"</li>\n");
+//            }
+//            }catch(Exception ex){
+//                System.out.println("Twitter Followers Query Issue!");
+//            }
+//            
+            
+            
+            out.println(
+"										</ul>\n" +
+"									</div>\n" +
+"								</div>\n" +
+"								<!-- Widget ends -->\n");
+            out.println(
+"							</div>\n");
+            out.println(
+"							<div class=\"col-lg-6 col-md-6 col-sm-12 col-xs-12\">\n");
+            out.println(
+"								<!-- Widget starts -->\n" +
+"								<div class=\"blog blog-danger\">\n");
+            out.println(
+"									<div class=\"blog-header\">\n" +
+//"										<h5 class=\"blog-title\">Instagram Followings "+InstagramFollowings+"</h5>\n" +
+"									</div>\n");
+            out.println(
+"									<div class=\"blog-body\" style=\"overflow:scroll; height:350px;\">\n" +
+"										<ul class=\"clients-list\">\n" );
+
+            
+//            AccountList = getAccountList.executeQuery(TwitterFollowingsQuery);
+//            try{
+//                while(AccountList.next()){
+//                String ProfilePic = AccountList.getString("ProfilePicture");
+//                String ProfileBan = AccountList.getString("ProfileBanner");
+//                String ScreenName = AccountList.getString("ScreenName");
+//                String UserName = AccountList.getString("Name");
+//                String UserId = AccountList.getString("UserID");
+//                String Following = "";
+//                if(AccountList.getInt("FollowBack") == 1){
+//                    Following = "<button type=\"button\" class=\"btn btn-info btn-rounded\">Following</button>";
+//                }else{
+//                    Following = "<button type=\"button\" class=\"btn btn-info btn-rounded\">Follow</button>";
+//                }
+//                
+//                out.println(
+//"<li class=\"client clearfix\">\n" +
+//"<img src=\""+ProfilePic+"\" class=\"avatar\" alt=\"Client\">\n" +
+//"<div class=\"client-details\">\n" +
+//"<p>\n" +
+//"<span class=\"name\"><a href=\"Profile?username="+UserId+"&source=twitter\">"+UserName+"</a></span>\n" +
+//"<span class=\"email\"><a href=\"Profile?username="+UserId+"&source=twitter\">@"+ScreenName+"</a></span>\n" +
+//"</p>\n" +
+//"<ul class=\"icons-nav\">\n" +
+//        Following +
+//"</ul>\n" +
+//"</div>\n" +
+//"</li>\n");
+//            }
+//            
+//            }catch(Exception ex){
+//                System.out.println("Twitter Followings Query Error!");
+//            }
+//            
+            out.println(
+"										</ul>\n" +
+"									</div>\n" +
+"								</div>\n" +
+"								<!-- Widget ends -->\n");
+            
+            out.println(
+"							</div>\n" +
+"						</div>\n" +
+"						<!-- Row End -->\n");
+                
+                
+            }
+            
+            
+            
             out.println(
 "					</div>\n" +
 "					<!-- Spacer ends -->\n" );
@@ -701,6 +990,25 @@ public class dashboard extends HttpServlet {
             out.println(
 "			<!-- Right sidebar starts -->\n" +
 "			<div class=\"right-sidebar\">\n");
+            //Add Account Button
+            out.println("<div class=\"col-lg-12 col-md-12 col-sm-12 col-xs-12\">\n" +
+"								<div class=\"panel\">\n" +
+"									<div class=\"panel-heading\">\n" +
+"										<h4 class=\"panel-title\">Add Accounts</h4>\n" +
+"									</div>\n" +
+"									<div class=\"panel-body\">\n" +
+"										<div class=\"demo-btn-group center-align-text\">\n" +
+"											<button type=\"button\" id=\"loading-btn\" data-loading-text=\"Loading...\" class=\"btn btn-info\" style=\"background-color:#5B90BF;\" onclick=\"window.location.href='login'\">Add Facebook Account</button>\n" +
+"											<button type=\"button\" id=\"loading-btn\" data-loading-text=\"Loading...\" class=\"btn btn-info\" style=\"background-color:#00ACEE;\" onclick=\"window.location.href='twitterlogin'\">Add Twitter Account</button>\n" +
+"											<button type=\"button\" id=\"loading-btn\" data-loading-text=\"Loading...\" class=\"btn btn-info\" style=\"background-color:#76BBAD;\" onclick=\"window.location.href='InstaConnect';\">Add Instagram Account</button>\n" +
+"											<button type=\"button\" id=\"loading-btn\" data-loading-text=\"Loading...\" class=\"btn btn-info\" style=\"background-color:#1A85BD;\" onclick=\"window.location.href='';\">Add LinkedIn Account</button>\n" +
+"											<button type=\"button\" id=\"loading-btn\" data-loading-text=\"Loading...\" class=\"btn btn-info\" style=\"background-color:#D66061;\" onclick=\"window.location.href='googlelogin?usergetting="+GooglePlusAcc+"';\">Add Google+ Account</button>\n" +
+"										</div>\n" +
+"									</div>\n" +
+"								</div>\n" +
+"							</div>\n" +
+"						</div>");
+            
             out.println(
 "			</div>\n" +
 "			<!-- Right sidebar ends -->\n");
@@ -717,23 +1025,21 @@ CopyRightSyntax +
             out.println(
 "		<!-- jQuery (necessary for Bootstrap's JavaScript plugins) -->\n" +
 "		<script src=\"js/jquery.js\"></script>\n" +
-"\n" +
 "		<!-- jQuery UI JS -->\n" +
 "		<script src=\"js/jquery-ui-v1.10.3.js\"></script>\n" +
-"\n" +
 "		<!-- Include all compiled plugins (below), or include individual files as needed -->\n" +
 "		<script src=\"js/bootstrap.min.js\"></script>\n" +
-"\n" +
+
 "		<!-- Sparkline graphs -->\n" +
 "		<script src=\"js/sparkline.js\"></script>\n" +
-"\n" +
+
 "		<!-- jquery ScrollUp JS -->\n" +
 "		<script src=\"js/scrollup/jquery.scrollUp.js\"></script>\n" +
-"\n" +
+
 "		<!-- Notifications JS -->\n" +
 "		<script src=\"js/alertify/alertify.js\"></script>\n" +
 "		<script src=\"js/alertify/alertify-custom.js\"></script>\n" +
-"\n" +
+
 "		<!-- Flot Charts -->\n" +
 "		<script src=\"js/flot/jquery.flot.js\"></script>\n" +
 "		<script src=\"js/flot/jquery.flot.tooltip.min.js\"></script>\n" +
@@ -741,15 +1047,13 @@ CopyRightSyntax +
 "		<script src=\"js/flot/jquery.flot.stack.min.js\"></script>\n" +
 "		<script src=\"js/flot/jquery.flot.orderBar.min.js\"></script>\n" +
 "		<script src=\"js/flot/jquery.flot.pie.min.js\"></script>\n" +
-"\n" +
+
 "		<!-- JVector Map -->\n" +
 "		<script src=\"js/jvectormap/jquery-jvectormap-1.2.2.min.js\"></script>\n" +
-"		<script src=\"js/jvectormap/jquery-jvectormap-usa.js\"></script>\n" +
-"\n" +
+"		<script src=\"js/jvectormap/jquery-jvectormap-usa.js\"></script>\n"+
 "		<!-- Custom Index -->\n" +
 "		<script src=\"js/custom.js\"></script>\n" +
-"		<script src=\"js/custom-index.js\"></script>\n" +
-"	");
+"		<script src=\"js/custom-index.js\"></script>\n");
             out.println("</body>");
             out.println("</html>");
      } catch (Exception ex) {

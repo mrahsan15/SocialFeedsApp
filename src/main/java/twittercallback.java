@@ -1,11 +1,13 @@
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.sql.Connection;
+import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import javax.servlet.ServletException;
+import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -18,49 +20,81 @@ import twitter4j.auth.RequestToken;
 public class twittercallback extends HttpServlet {
 
     protected void processRequest(HttpServletRequest request, HttpServletResponse response)
-            throws ServletException, IOException {
+            throws ServletException, IOException{
         response.setContentType("text/html;charset=UTF-8");
-        try (PrintWriter out = response.getWriter()) {
-    
-            
+        try{
+        AccessToken token = null;
             Twitter twitter = (Twitter) request.getSession().getAttribute("twitter");
+            
             RequestToken requestToken = (RequestToken) request.getSession().getAttribute("requestToken");
             String verifier = request.getParameter("oauth_verifier");
+            
             try {
-                AccessToken token = twitter.getOAuthAccessToken(requestToken, verifier);
-                Connection con = new DBConnectivity().ConnectDB();
-                Statement st = con.createStatement();
-                
-                String Query = "INSERT INTO TokensData.TWITTER_ACCOUNT (ID, ACCOUNTNAME, TOKEN)"
-                            + " VALUES (NULL, '"+twitter.getScreenName()+"', '"+token+"')";
-                
-                st.executeUpdate(Query);
-                System.out.println("Token updated! : "+token);
-                
-                request.getSession().removeAttribute("requestToken");
-            } catch (TwitterException e) {
-                throw new ServletException(e);
-            } catch (SQLException ex) {
-                Logger.getLogger(twittertoken.class.getName()).log(Level.SEVERE, null, ex);
+                token = twitter.getOAuthAccessToken(requestToken, verifier);
+            }catch(Exception ex){
+                System.out.println("Token couldn't get.");
             }
-            response.sendRedirect(request.getContextPath() + "/Test");
-            
-            
-            
-            
-            
-            
-            
-            
-            out.println("<!DOCTYPE html>");
-            out.println("<html>");
-            out.println("<head>");
-            out.println("<title>Servlet twittercallback</title>");            
-            out.println("</head>");
-            out.println("<body>");
-            out.println("<h1>Servlet twittercallback at " + request.getContextPath() + "</h1>");
-            out.println("</body>");
-            out.println("</html>");
+            String UserLogged = "";
+            try{
+                Cookie[] cookies = request.getCookies();
+                for(int i = 0; i< cookies.length; i++){
+                    if((cookies[i].getName()).equals("LoggedIn")){
+                        UserLogged= cookies[i].getValue();
+                    }
+                }
+            }catch(Exception ex){
+                System.out.println(ex);
+                System.out.println("Cookie Not Found here! Visit Some Bakery Please!");
+            }
+            String Account = twitter.getId()+"";
+            String CheckAccount = "SELECT * from Ahsan_Data.TokensData WHERE ACCOUNTID = '"+Account+"'";
+            String LoggedInDetail = "SELECT * from Ahsan_Data.LoginAccounts WHERE UserName = '"+UserLogged+"'";
+            Connection con = new DBConnectivity().ConnectDB();
+            Statement st  = con.createStatement();
+            ResultSet rs = null;
+            rs = st.executeQuery(LoggedInDetail);
+            rs.next();
+            int id = rs.getInt("ID");;
+            rs = st.executeQuery(CheckAccount);
+            try{
+                if(rs.next()){
+                    if(rs.getString("ACCOUNTID").equals(Account)){
+                        int accountno = rs.getInt("ID");
+                        String Update = "UPDATE Ahsan_Data.TokensData SET TOKEN = '"+token.getToken()+"' WHERE ID ="+accountno;
+                        st.executeUpdate(Update);
+                    }
+                }else{
+                    try{
+                        rs = st.executeQuery(LoggedInDetail);
+                        if(rs.next()){
+                            id = rs.getInt("ID");
+                        }
+                        String Query = "INSERT INTO Ahsan_Data.TokensData(ID, ACCOUNTNAME, ACCOUNTID, TOKEN, ACCOUNT)"
+                            + "VALUES (null ,'Twitter','"+Account+"','"+token.getToken()+"',"+id+")";
+
+                        st.executeUpdate(Query);
+                    }catch(Exception exx){
+                        System.out.println(exx);
+                    }
+                }
+            }catch(Exception ex){
+                System.out.println(ex);
+                try{
+                rs = st.executeQuery(LoggedInDetail);
+                if(rs.next()){
+                    id = rs.getInt("ID");
+                }
+                String Query = "INSERT INTO Ahsan_Data.TokensData(ID, ACCOUNTNAME, ACCOUNTID, TOKEN, ACCOUNT)"
+                    + "VALUES (null ,Twitter,'"+Account+"','"+token.getToken()+"',"+id+")";
+                st.executeUpdate(Query);
+                }
+                catch(Exception exx){
+                    System.out.println(exx);
+                }
+            }
+            response.sendRedirect(request.getContextPath() + "/dashboard");
+        }catch(Exception ex){
+            System.out.println("Whole Exception error!");
         }
     }
 
